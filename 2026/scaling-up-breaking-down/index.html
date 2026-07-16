@@ -1,0 +1,3532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scaling Up, Breaking Down — Structuring Microservices on Kubernetes</title>
+
+<!--
+    ============================================================================
+    SCALING UP, BREAKING DOWN (v2)
+    Structuring Microservices on Kubernetes
+    A talk by Kunal Das — 16th July 2026, Virtual
+
+    Design System: "Tawa Terminal"
+    - Palette: deep charcoal + turmeric/saffron gold + chili-red + cream
+    - Typography: Fraunces (serif display) + JetBrains Mono (body/chrome)
+    - Signature: terminal grid background, prompt-line topbar, corner marks,
+      chili-red accents, turmeric radial glow
+    - Stage: fixed 1920×1080, scaled uniformly to viewport
+    - 23 slides (v2 outline — fresher-friendly, monolith-first narrative)
+    ============================================================================
+-->
+
+<!-- Fonts: Fraunces (serif display) + JetBrains Mono (body) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,900&display=swap" rel="stylesheet">
+
+<style>
+/* ===========================================
+   CSS CUSTOM PROPERTIES — TAWA TERMINAL THEME
+   Change these to re-theme the whole deck.
+   =========================================== */
+:root{
+    /* Core palette */
+    --charcoal:#141210;
+    --charcoal-2:#1d1a16;
+    --turmeric:#E8A317;
+    --turmeric-glow:rgba(232,163,23,0.18);
+    --saffron:#F2C14E;
+    --chili:#D64541;
+    --chili-soft:rgba(214,69,65,0.12);
+    --cream:#F4ECD8;
+    --cream-dim:#A39A82;
+    --ash:#5C5648;
+    --border:rgba(232,163,23,0.22);
+    --border-soft:rgba(232,163,23,0.10);
+    --card-bg:rgba(232,163,23,0.06);
+    --card-bg-2:rgba(29,26,22,0.9);
+    --green:#7FB069;
+
+    /* Typography — authored at 1920×1080 stage */
+    --font-display:'Fraunces',Georgia,serif;
+    --font-mono:'JetBrains Mono',monospace;
+    --title-size:148px;
+    --section-size:120px;
+    --headline-size:72px;
+    --subhead-size:42px;
+    --body-size:28px;
+    --small-size:20px;
+
+    /* Spacing — authored at 1920×1080 stage */
+    --slide-padding:64px 96px;
+    --gap:32px;
+
+    /* Animation */
+    --ease-out-expo:cubic-bezier(0.16,1,0.3,1);
+    --duration-normal:0.8s;
+    --duration-slow:1s;
+}
+
+/* ===========================================
+   BASE RESET
+   =========================================== */
+*{margin:0;padding:0;box-sizing:border-box}
+
+/* ===========================================
+   VIEWPORT BASE CSS (mandatory — include in full)
+   Fixed 16:9 stage model. Slides authored at
+   1920×1080 and scaled as a whole to the viewport.
+   =========================================== */
+html,body{
+    width:100%;height:100%;margin:0;overflow:hidden;
+    background:var(--charcoal);
+}
+.deck-viewport{
+    position:fixed;inset:0;overflow:hidden;
+    background:var(--charcoal);
+}
+.deck-stage{
+    position:absolute;left:0;top:0;
+    width:1920px;height:1080px;
+    overflow:hidden;
+    transform-origin:0 0;
+    background:var(--charcoal);
+}
+.slide{
+    position:absolute;inset:0;
+    width:1920px;height:1080px;
+    overflow:hidden;display:block;
+    visibility:hidden;opacity:0;pointer-events:none;
+    background:var(--charcoal);
+}
+.slide.active,.slide.visible{
+    visibility:visible;opacity:1;pointer-events:auto;z-index:1;
+}
+img,video,canvas,svg{max-width:100%;max-height:100%}
+
+@media print{
+    html,body{width:1920px;height:auto;overflow:visible;background:#fff}
+    .deck-viewport{position:static;overflow:visible;background:#fff}
+    .deck-stage{position:static;width:auto;height:auto;transform:none!important;background:none}
+    .slide{position:relative;display:block!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;width:1920px;height:1080px;break-after:page;page-break-after:always}
+    .slide:last-child{break-after:auto;page-break-after:auto}
+    .deck-controls{display:none!important}
+    .edit-hotzone,.edit-toggle{display:none!important}
+}
+@media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation-duration:0.01ms!important;transition-duration:0.2s!important}
+}
+
+/* ===========================================
+   SHARED DECORATIVE ELEMENTS
+   =========================================== */
+
+/* Terminal grid background — faint graph lines on every slide */
+.terminal-grid{
+    position:absolute;inset:0;
+    background-image:
+        linear-gradient(rgba(232,163,23,0.035) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(232,163,23,0.035) 1px,transparent 1px);
+    background-size:48px 48px;
+    pointer-events:none;
+    z-index:0;
+}
+
+/* Turmeric radial glow — atmospheric depth */
+.turmeric-glow{
+    position:absolute;inset:0;
+    background:
+        radial-gradient(ellipse at 78% 30%, var(--turmeric-glow) 0%, transparent 55%),
+        radial-gradient(ellipse at 12% 88%, rgba(214,69,65,0.08) 0%, transparent 50%);
+    pointer-events:none;
+    z-index:0;
+}
+
+/* All slide content sits above decorative layers */
+.slide-content{
+    position:relative;
+    z-index:1;
+    height:100%;
+}
+
+/* ===========================================
+   SHARED CHROME — TOPBAR & BOTTOMBAR
+   =========================================== */
+
+/* Topbar: terminal prompt line + slide counter */
+.topbar{
+    position:relative;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    font-family:var(--font-mono);
+    font-size:18px;
+    color:var(--cream-dim);
+    letter-spacing:0.04em;
+    padding:28px 96px 0;
+    z-index:2;
+}
+.topbar .prompt{color:var(--turmeric)}
+.topbar .prompt::before{content:"$ ";color:var(--ash)}
+.topbar .prompt .typed{color:var(--cream)}
+.topbar .cursor{
+    display:inline-block;width:10px;height:18px;
+    background:var(--turmeric);margin-left:3px;
+    vertical-align:middle;
+    animation:blink 1.1s steps(2) infinite;
+}
+@keyframes blink{50%{opacity:0}}
+.topbar .counter{color:var(--ash);font-size:16px}
+.topbar .counter .now{color:var(--turmeric);font-weight:700}
+.topbar .counter .sep{color:var(--ash)}
+
+/* Bottombar: author + slide tag */
+.bottombar{
+    position:absolute;
+    bottom:0;left:0;right:0;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    padding:0 96px 28px;
+    font-family:var(--font-mono);
+    font-size:18px;
+    color:var(--cream-dim);
+    border-top:1px solid var(--border-soft);
+    padding-top:20px;
+    margin:0 96px;
+    width:calc(100% - 192px);
+    z-index:2;
+}
+.bottombar .author{color:var(--cream-dim);font-weight:500}
+.bottombar .author .name{color:var(--cream);font-weight:700}
+.bottombar .tag{color:var(--ash);text-transform:uppercase;letter-spacing:0.1em;font-size:15px}
+
+/* Corner mark — circular k8s/version badge */
+.corner-mark{
+    position:absolute;
+    right:64px;top:110px;
+    width:100px;height:100px;
+    border:2px solid var(--turmeric);
+    border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--font-mono);
+    font-size:14px;
+    color:var(--turmeric);
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    opacity:0.6;
+    text-align:center;
+    line-height:1.3;
+    z-index:2;
+}
+.corner-mark::before{
+    content:"";position:absolute;inset:7px;
+    border:1px dashed var(--turmeric);
+    border-radius:50%;opacity:0.4;
+}
+
+/* Section number — large faded numeral */
+.section-num{
+    position:absolute;
+    right:80px;top:50%;
+    transform:translateY(-50%);
+    font-family:var(--font-display);
+    font-weight:900;
+    font-size:380px;
+    line-height:0.8;
+    color:var(--turmeric);
+    opacity:0.07;
+    pointer-events:none;
+    z-index:0;
+    letter-spacing:-0.05em;
+}
+
+/* ===========================================
+   REVEAL ANIMATIONS
+   Triggered via .visible class on the active slide.
+   =========================================== */
+.reveal{opacity:0;transform:translateY(34px);transition:opacity var(--duration-normal) var(--ease-out-expo),transform var(--duration-normal) var(--ease-out-expo)}
+.slide.visible .reveal{opacity:1;transform:translateY(0)}
+.reveal:nth-child(1){transition-delay:0.1s}
+.reveal:nth-child(2){transition-delay:0.25s}
+.reveal:nth-child(3){transition-delay:0.4s}
+.reveal:nth-child(4){transition-delay:0.55s}
+.reveal:nth-child(5){transition-delay:0.7s}
+.reveal:nth-child(6){transition-delay:0.85s}
+
+.reveal-left{opacity:0;transform:translateX(-40px);transition:opacity var(--duration-normal) var(--ease-out-expo),transform var(--duration-normal) var(--ease-out-expo)}
+.slide.visible .reveal-left{opacity:1;transform:translateX(0)}
+.slide.visible .reveal-left:nth-child(1){transition-delay:0.15s}
+.slide.visible .reveal-left:nth-child(2){transition-delay:0.3s}
+.slide.visible .reveal-left:nth-child(3){transition-delay:0.45s}
+
+.reveal-scale{opacity:0;transform:scale(0.88);transition:opacity var(--duration-slow) var(--ease-out-expo),transform var(--duration-slow) var(--ease-out-expo)}
+.slide.visible .reveal-scale{opacity:1;transform:scale(1)}
+.slide.visible .reveal-scale:nth-child(1){transition-delay:0.2s}
+.slide.visible .reveal-scale:nth-child(2){transition-delay:0.4s}
+.slide.visible .reveal-scale:nth-child(3){transition-delay:0.6s}
+
+.reveal-blur{opacity:0;filter:blur(12px);transition:opacity var(--duration-slow) var(--ease-out-expo),filter var(--duration-slow) var(--ease-out-expo)}
+.slide.visible .reveal-blur{opacity:1;filter:blur(0)}
+.slide.visible .reveal-blur:nth-child(1){transition-delay:0.2s}
+.slide.visible .reveal-blur:nth-child(2){transition-delay:0.5s}
+
+/* ===========================================
+   SLIDE 1 — TITLE SLIDE
+   =========================================== */
+.slide-title{
+    padding:0;
+    background:
+        radial-gradient(ellipse at 78% 30%, var(--turmeric-glow) 0%, transparent 55%),
+        radial-gradient(ellipse at 12% 88%, rgba(214,69,65,0.10) 0%, transparent 50%),
+        var(--charcoal);
+}
+.slide-title .hero{
+    position:relative;z-index:1;
+    display:flex;flex-direction:column;justify-content:center;
+    padding:48px 96px;
+    min-height:760px;
+}
+.kicker-tag{
+    display:inline-flex;align-items:center;gap:14px;
+    font-family:var(--font-mono);font-size:20px;
+    color:var(--chili);text-transform:uppercase;letter-spacing:0.18em;
+    margin-bottom:40px;
+}
+.kicker-tag .chili-dot{
+    width:14px;height:14px;background:var(--chili);
+    transform:rotate(45deg);
+}
+.slide-title h1{
+    font-family:var(--font-display);font-weight:900;
+    font-size:148px;line-height:0.92;color:var(--cream);
+    letter-spacing:-0.025em;max-width:1500px;
+}
+.slide-title h1 .up{display:block;font-style:italic;font-weight:600;color:var(--turmeric)}
+.slide-title h1 .break{display:block}
+.slide-title h1 .break .strike{position:relative;color:var(--cream)}
+.slide-title h1 .break .strike::after{
+    content:"";position:absolute;left:-8px;right:-8px;top:52%;height:8px;
+    background:var(--chili);transform:scaleX(0);transform-origin:left;
+    transition:transform 0.9s var(--ease-out-expo) 1.2s;
+}
+.slide.visible .slide-title h1 .break .strike::after{transform:scaleX(1)}
+.slide-title .subtitle{
+    font-family:var(--font-mono);font-weight:500;font-size:30px;
+    color:var(--cream-dim);margin-top:44px;max-width:920px;line-height:1.45;
+}
+.slide-title .subtitle .hl{color:var(--saffron)}
+.slide-title .subtitle .hl-red{color:var(--chili)}
+
+/* ===========================================
+   SLIDE 2 — ABOUT ME
+   =========================================== */
+.slide-about{padding:0}
+.slide-about .about-grid{
+    position:relative;z-index:1;
+    display:grid;grid-template-columns:1fr 1fr;
+    gap:64px;padding:100px 96px 100px;
+    height:100%;align-items:start;
+}
+.slide-about .left-col h2{
+    font-family:var(--font-display);font-weight:900;
+    font-size:88px;line-height:0.95;color:var(--cream);
+    letter-spacing:-0.02em;margin-bottom:12px;
+}
+.slide-about .left-col h2 .accent{color:var(--turmeric);font-style:italic;font-weight:600}
+.slide-about .left-col .role{
+    font-family:var(--font-mono);font-size:24px;color:var(--chili);
+    text-transform:uppercase;letter-spacing:0.1em;margin-bottom:40px;
+}
+.slide-about .left-col .bio{
+    font-family:var(--font-mono);font-size:22px;color:var(--cream-dim);
+    line-height:1.6;max-width:560px;
+}
+.slide-about .left-col .bio .hl{color:var(--saffron)}
+.slide-about .right-col{display:flex;flex-direction:column;gap:28px}
+.about-card{
+    background:var(--card-bg);border:1px solid var(--border);
+    border-radius:8px;padding:28px 32px;
+}
+.about-card .card-label{
+    font-family:var(--font-mono);font-size:15px;color:var(--turmeric);
+    text-transform:uppercase;letter-spacing:0.14em;margin-bottom:14px;
+}
+.about-card .card-content{
+    font-family:var(--font-mono);font-size:20px;color:var(--cream);
+    line-height:1.6;
+}
+.about-card .card-content .dim{color:var(--cream-dim)}
+.about-card .card-content .chili{color:var(--chili)}
+.about-card.talks .card-content{font-size:18px;line-height:1.8}
+.about-card .pill{
+    display:inline-block;background:var(--chili-soft);color:var(--chili);
+    padding:4px 14px;border-radius:20px;font-size:16px;font-weight:700;
+    margin:0 6px 6px 0;
+}
+
+/* ===========================================
+   SLIDE 3 — SETTING THE SCENE
+   =========================================== */
+.slide-scene{padding:0;display:flex;align-items:center;justify-content:center}
+.slide-scene .scene-content{
+    position:relative;z-index:1;text-align:center;padding:0 120px;
+}
+.slide-scene .scene-kicker{
+    font-family:var(--font-mono);font-size:22px;color:var(--turmeric);
+    text-transform:uppercase;letter-spacing:0.16em;margin-bottom:36px;
+}
+.slide-scene .scene-kicker::before{content:"# "}
+.slide-scene h2{
+    font-family:var(--font-display);font-weight:600;font-style:italic;
+    font-size:88px;line-height:1.05;color:var(--cream);
+    letter-spacing:-0.02em;max-width:1300px;margin:0 auto;
+}
+.slide-scene h2 .hl{color:var(--turmeric);font-weight:900;font-style:normal}
+.slide-scene .scene-sub{
+    font-family:var(--font-mono);font-size:24px;color:var(--cream-dim);
+    margin-top:40px;max-width:800px;margin-left:auto;margin-right:auto;line-height:1.5;
+}
+.queue-visual{
+    display:flex;gap:8px;justify-content:center;margin-top:56px;
+}
+.queue-visual .person{
+    width:24px;height:24px;border-radius:50%;
+    background:var(--turmeric);opacity:0.4;
+}
+.queue-visual .person:nth-child(1){opacity:0.9}
+.queue-visual .person:nth-child(2){opacity:0.75}
+.queue-visual .person:nth-child(3){opacity:0.6}
+.queue-visual .person:nth-child(4){opacity:0.45}
+.queue-visual .person:nth-child(5){opacity:0.3}
+.queue-visual .cafe{
+    width:48px;height:48px;background:var(--chili);
+    border-radius:6px;margin-left:24px;opacity:0.8;
+}
+
+/* ===========================================
+   SLIDE 4 — WHAT IS A MONOLITH?
+   =========================================== */
+.slide-monolith{padding:0}
+.slide-monolith .mono-header{
+    position:relative;z-index:1;padding:100px 96px 0;
+}
+.slide-monolith .mono-header h2{
+    font-family:var(--font-display);font-weight:900;
+    font-size:64px;color:var(--cream);letter-spacing:-0.02em;line-height:1;
+}
+.slide-monolith .mono-header h2 .gold{color:var(--turmeric)}
+.slide-monolith .mono-body{
+    position:relative;z-index:1;
+    display:grid;grid-template-columns:1fr 1fr;
+    gap:64px;padding:48px 96px 0;align-items:center;
+}
+/* CSS kitchen diagram — one kitchen, one cook */
+.kitchen-diagram{
+    display:flex;flex-direction:column;align-items:center;gap:24px;
+}
+.kitchen-box{
+    width:420px;border:2px solid var(--turmeric);border-radius:16px;
+    padding:40px;display:flex;flex-direction:column;gap:16px;
+    background:var(--card-bg);
+}
+.kitchen-box .kitchen-title{
+    font-family:var(--font-mono);font-size:16px;color:var(--turmeric);
+    text-transform:uppercase;letter-spacing:0.12em;text-align:center;
+}
+.kitchen-box .kitchen-items{
+    display:flex;flex-wrap:wrap;gap:10px;justify-content:center;
+}
+.kitchen-box .kitchen-tag{
+    font-family:var(--font-mono);font-size:16px;color:var(--cream);
+    padding:8px 16px;border:1px solid var(--border-soft);border-radius:8px;
+}
+.kitchen-box .kitchen-tag .icon{margin-right:6px}
+.kitchen-label{
+    font-family:var(--font-display);font-weight:600;font-style:italic;
+    font-size:28px;color:var(--saffron);
+}
+.slide-monolith .mono-explain{
+    font-family:var(--font-mono);font-size:22px;color:var(--cream-dim);
+    line-height:1.6;
+}
+.slide-monolith .mono-explain .hl{color:var(--saffron)}
+.slide-monolith .mono-explain .chili{color:var(--chili)}
+.slide-monolith .mono-examples{
+    margin-top:24px;display:flex;flex-wrap:wrap;gap:10px;
+}
+.slide-monolith .mono-examples .ex-tag{
+    font-family:var(--font-mono);font-size:16px;color:var(--cream-dim);
+    padding:8px 16px;background:var(--card-bg);border-radius:20px;
+    border:1px solid var(--border-soft);
+}
+
+/* ===========================================
+   SLIDE 5 — WHEN THE MONOLITH BREAKS
+   =========================================== */
+.slide-breaks{padding:0}
+.slide-breaks .breaks-header{
+    position:relative;z-index:1;padding:100px 96px 0;
+}
+.slide-breaks .breaks-header h2{
+    font-family:var(--font-display);font-weight:900;
+    font-size:60px;color:var(--cream);letter-spacing:-0.02em;line-height:1.05;
+}
+.slide-breaks .breaks-header h2 .chili{color:var(--chili)}
+.slide-breaks .breaks-grid{
+    position:relative;z-index:1;
+    display:grid;grid-template-columns:repeat(3,1fr);
+    gap:32px;padding:56px 96px 0;
+}
+.breaks-card{
+    background:var(--chili-soft);border:1px solid var(--chili);
+    border-radius:10px;padding:36px 32px;
+    display:flex;flex-direction:column;gap:20px;min-height:300px;
+}
+.breaks-card .breaks-icon{
+    font-family:var(--font-mono);font-size:36px;
+}
+.breaks-card .breaks-title{
+    font-family:var(--font-display);font-weight:700;font-size:30px;
+    color:var(--cream);line-height:1.15;letter-spacing:-0.01em;
+}
+.breaks-card .breaks-desc{
+    font-family:var(--font-mono);font-size:18px;color:var(--cream-dim);
+    line-height:1.5;flex-grow:1;
+}
+.breaks-card .breaks-tag{
+    font-family:var(--font-mono);font-size:15px;color:var(--chili);
+    font-weight:700;text-transform:uppercase;letter-spacing:0.1em;
+}
+.slide-breaks .breaks-warning{
+    position:relative;z-index:1;
+    margin:36px 96px 0;padding:24px 36px;
+    border:1px solid var(--chili);border-radius:8px;
+    background:rgba(214,69,65,0.08);
+    font-family:var(--font-mono);font-size:22px;color:var(--cream);
+    text-align:center;line-height:1.4;
+}
+.slide-breaks .breaks-warning .chili{color:var(--chili);font-weight:700}
+
+/* ===========================================
+   SLIDE 6 — WHAT ARE MICROSERVICES?
+   =========================================== */
+.slide-microservices{padding:0}
+.slide-microservices .ms-header{
+    position:relative;z-index:1;padding:100px 96px 0;
+}
+.slide-microservices .ms-header h2{
+    font-family:var(--font-display);font-weight:900;
+    font-size:64px;color:var(--cream);letter-spacing:-0.02em;line-height:1;
+}
+.slide-microservices .ms-header h2 .gold{color:var(--turmeric)}
+.slide-microservices .ms-body{
+    position:relative;z-index:1;
+    display:grid;grid-template-columns:1fr 1fr;
+    gap:64px;padding:48px 96px 0;align-items:center;
+}
+/* CSS multi-station diagram */
+.stations-diagram{
+    display:grid;grid-template-columns:repeat(2,1fr);
+    gap:16px;max-width:520px;
+}
+.station-box{
+    border:1px solid var(--turmeric);border-radius:12px;
+    padding:20px 16px;text-align:center;
+    background:var(--card-bg);
+}
+.station-box .station-icon{font-size:32px;margin-bottom:8px}
+.station-box .station-name{
+    font-family:var(--font-mono);font-size:15px;color:var(--turmeric);
+    font-weight:700;text-transform:uppercase;letter-spacing:0.08em;
+}
+.station-box .station-team{
+    font-family:var(--font-mono);font-size:13px;color:var(--cream-dim);
+    margin-top:4px;
+}
+.slide-microservices .ms-explain{
+    font-family:var(--font-mono);font-size:22px;color:var(--cream-dim);
+    line-height:1.6;
+}
+.slide-microservices .ms-explain .hl{color:var(--saffron)}
+.slide-microservices .ms-explain .gold{color:var(--turmeric);font-weight:700}
+.slide-microservices .ms-label{
+    margin-top:24px;font-family:var(--font-display);font-weight:600;
+    font-style:italic;font-size:28px;color:var(--turmeric);
+}
+
+/* ===========================================
+   SLIDE 7 — MONOLITH vs MICROSERVICES COMPARISON
+   =========================================== */
+.slide-compare{padding:0}
+.slide-compare .compare-header{
+    position:relative;z-index:1;padding:100px 96px 0;
+}
+.slide-compare .compare-header h2{
+    font-family:var(--font-display);font-weight:900;
+    font-size:64px;color:var(--cream);letter-spacing:-0.02em;line-height:1;
+}
+.slide-compare .compare-header h2 .gold{color:var(--turmeric)}
+.slide-compare .compare-grid{
+    position:relative;z-index:1;
+    display:grid;grid-template-columns:1fr 1fr;
+    gap:32px;padding:48px 96px 0;
+}
+.compare-col{
+    border-radius:12px;padding:36px 36px;
+    display:flex;flex-direction:column;gap:18px;
+}
+.compare-col.monolith{background:var(--chili-soft);border:1px solid var(--chili)}
+.compare-col.micro{background:rgba(232,163,23,0.08);border:1px solid var(--turmeric)}
+.compare-col .col-label{
+    font-family:var(--font-mono);font-size:16px;font-weight:700;
+    text-transform:uppercase;letter-spacing:0.12em;
+}
+.compare-col.monolith .col-label{color:var(--chili)}
+.compare-col.micro .col-label{color:var(--turmeric)}
+.compare-col .col-name{
+    font-family:var(--font-display);font-weight:900;font-size:40px;
+    color:var(--cream);letter-spacing:-0.02em;line-height:1.05;
+}
+.compare-col .col-points{
+    font-family:var(--font-mono);font-size:19px;color:var(--cream);
+    line-height:1.8;
+}
+.compare-col .col-points .pro{color:var(--green)}
+.compare-col .col-points .con{color:var(--chili)}
+.compare-col .col-points .hl{color:var(--saffron)}
+.slide-compare .compare-bottom{
+    position:relative;z-index:1;
+    margin:36px 96px 0;padding:28px 36px;
+    border:1px solid var(--turmeric);border-radius:8px;
+    background:rgba(232,163,23,0.06);
+    text-align:center;
+}
+.slide-compare .compare-bottom .cb-text{
+    font-family:var(--font-display);font-weight:600;font-style:italic;
+    font-size:28px;color:var(--cream);line-height:1.3;
+}
+.slide-compare .compare-bottom .cb-text .gold{color:var(--turmeric);font-style:normal;font-weight:900}
+
+/* ===========================================
+   SLIDE 8 — THE ONE-LINER
+   =========================================== */
+.slide-oneliner{padding:0;display:flex;align-items:center;justify-content:center}
+.slide-oneliner .oneliner-content{
+    position:relative;z-index:1;text-align:center;padding:0 140px;
+}
+.slide-oneliner .ol-kicker{
+    font-family:var(--font-mono);font-size:18px;color:var(--ash);
+    text-transform:uppercase;letter-spacing:0.16em;margin-bottom:48px;
+}
+.slide-oneliner h2{
+    font-family:var(--font-display);font-weight:900;
+    font-size:96px;line-height:1.02;color:var(--cream);
+    letter-spacing:-0.025em;
+}
+.slide-oneliner h2 .red{color:var(--chili)}
+.slide-oneliner h2 .gold{color:var(--turmeric)}
+.slide-oneliner .ol-sub{
+    font-family:var(--font-mono);font-size:26px;color:var(--cream-dim);
+    margin-top:48px;font-style:italic;
+}
+.slide-oneliner .ol-sub .hl{color:var(--saffron);font-style:normal}
+.slide-oneliner .screenshot-hint{
+    font-family:var(--font-mono);font-size:16px;color:var(--ash);
+    margin-top:32px;text-transform:uppercase;letter-spacing:0.12em;
+}
+
+/* ===========================================
+   SECTION TITLE SLIDES (9, 13, 15, 18)
+   =========================================== */
+.slide-section{
+    padding:0;display:flex;align-items:center;
+    background:
+        radial-gradient(ellipse at 80% 50%, var(--turmeric-glow) 0%, transparent 60%),
+        var(--charcoal);
+}
+.slide-section .section-content{
+    position:relative;z-index:1;padding:0 96px;max-width:1300px;
+}
+.slide-section .part-label{
+    font-family:var(--font-mono);font-size:22px;color:var(--chili);
+    text-transform:uppercase;letter-spacing:0.2em;margin-bottom:28px;
+    display:flex;align-items:center;gap:16px;
+}
+.slide-section .part-label .chili-dot{
+    width:12px;height:12px;background:var(--chili);transform:rotate(45deg);
+}
+.slide-section h2{
+    font-family:var(--font-display);font-weight:900;
+    font-size:110px;line-height:0.95;color:var(--cream);
+    letter-spacing:-0.025em;
+}
+.slide-section h2 .gold{color:var(--turmeric)}
+.slide-section .section-sub{
+    font-family:var(--font-mono);font-size:28px;color:var(--cream-dim);
+    margin-top:36px;font-style:italic;max-width:700px;line-height:1.4;
+}
+.slide-section .section-sub .hl{color:var(--saffron);font-style:normal}
+
+/* ===========================================
+   SLIDE 10 — POLL + THE TRAP
+   =========================================== */
+.slide-poll{padding:0}
+.slide-poll .poll-grid{
+    position:relative;z-index:1;
+    display:grid;grid-template-columns:380px 1fr;
+    gap:80px;padding:110px 96px 110px;align-items:start;
+}
+.slide-poll .qr-box{
+    background:var(--cream);border-radius:12px;padding:32px;
+    display:flex;flex-direction:column;align-items:center;gap:20px;
+}
+.slide-poll .qr-placeholder{
+    width:240px;height:240px;background:var(--charcoal);
+    border-radius:8px;display:flex;align-items:center;justify-content:center;
+    position:relative;overflow:hidden;
+}
+.slide-poll .qr-placeholder::before{
+    content:"";position:absolute;inset:0;
+    background-image:
+        linear-gradient(var(--cream) 2px,transparent 2px),
+        linear-gradient(90deg,var(--cream) 2px,transparent 2px);
+    background-size:20px 20px;opacity:0.15;
+}
+.slide-poll .qr-placeholder .qr-text{
+    font-family:var(--font-mono);font-size:14px;color:var(--cream-dim);
+    text-align:center;z-index:1;line-height:1.4;
+}
+.slide-poll .qr-label{
+    font-family:var(--font-mono);font-size:16px;color:var(--charcoal);
+    font-weight:700;text-align:center;
+}
+.slide-poll .qr-label .url{color:var(--chili);font-size:14px;display:block;margin-top:6px}
+.slide-poll .poll-content h2{
+    font-family:var(--font-display);font-weight:900;
+    font-size:52px;line-height:1.05;color:var(--cream);
+    letter-spacing:-0.02em;margin-bottom:12px;
+}
+.slide-poll .poll-content .poll-q{
+    font-family:var(--font-mono);font-size:22px;color:var(--turmeric);
+    margin-bottom:32px;
+}
+.slide-poll .poll-options{display:flex;flex-direction:column;gap:14px}
+.poll-option{
+    display:flex;align-items:center;gap:20px;
+    background:var(--card-bg);border:1px solid var(--border-soft);
+    border-radius:8px;padding:18px 28px;
+    transition:border-color 0.3s;
+}
+.poll-option .opt-num{
+    font-family:var(--font-mono);font-size:16px;color:var(--turmeric);
+    font-weight:700;min-width:40px;
+}
+.poll-option .opt-text{
+    font-family:var(--font-mono);font-size:22px;color:var(--cream);
+}
+.poll-option .opt-text .dim{color:var(--cream-dim)}
+.poll-option.funny{border-color:var(--chili);background:var(--chili-soft)}
+.poll-option.funny .opt-num{color:var(--chili)}
+.poll-option.funny .opt-text{color:var(--chili)}
+.poll-option.green-opt{border-color:var(--green);background:rgba(127,176,105,0.08)}
+.poll-option.green-opt .opt-num{color:var(--green)}
+.poll-option.green-opt .opt-text{color:var(--green)}
+
+/* ===========================================
+   SLIDE 11 — ANTI-PATTERNS
+   =========================================== */
+.slide-antipatterns{padding:0}
+.slide-antipatterns .ap-header{
+    position:relative;z-index:1;padding:100px 96px 0;
+}
+.slide-antipatterns .ap-header h2{
+    font-family:var(--font-display);font-weight:900;
+    font-size:64px;color:var(--cream);letter-spacing:-0.02em;line-height:1;
+}
+.slide-antipatterns .ap-header h2 .gold{color:var(--turmeric)}
+.slide-antipatterns .ap-header .ap-sub{
+    font-family:var(--font-mono);font-size:22px;color:var(--cream-dim);
+    margin-top:12px;
+}
+.slide-antipatterns .ap-grid{
+    position:relative;z-index:1;
+    display:grid;grid-template-columns:repeat(3,1fr);
+    gap:32px;padding:48px 96px 0;
+}
+.ap-card{
+    background:var(--card-bg);border:1px solid var(--border);
+    border-radius:10px;padding:36px 32px;
+    display:flex;flex-direction:column;gap:20px;
+    min-height:340px;
+}
+.ap-card .ap-num{
+    font-family:var(--font-mono);font-size:16px;color:var(--chili);
+    font-weight:700;letter-spacing:0.1em;
+}
+.ap-card .ap-name{
+    font-family:var(--font-display);font-weight:900;
+    font-size:34px;color:var(--cream);line-height:1.05;letter-spacing:-0.015em;
+}
+.ap-card .ap-name .gold{color:var(--turmeric)}
+.ap-card .ap-desc{
+    font-family:var(--font-mono);font-size:18px;color:var(--cream-dim);
+    line-height:1.5;font-style:italic;flex-grow:1;
+}
+.ap-card .ap-tag{
+    font-family:var(--font-mono);font-size:16px;color:var(--chili);
+    padding:8px 16px;background:var(--chili-soft);border-radius:20px;
+    align-self:flex-start;font-weight:700;
+}
+.slide-antipatterns .ap-takeaway{
+    position:relative;z-index:1;
+    margin:40px 96px 0;padding:28px 36px;
+    border:1px solid var(--turmeric);border-radius:8px;
+    background:rgba(232,163,23,0.06);
+}
+.slide-antipatterns .ap-takeaway .tk-label{
+    font-family:var(--font-mono);font-size:15px;color:var(--turmeric);
+    text-transform:uppercase;letter-spacing:0.14em;margin-bottom:8px;
+}
+.slide-antipatterns .ap-takeaway .tk-text{
+    font-family:var(--font-display);font-weight:600;font-style:italic;
+    font-size:26px;color:var(--cream);line-height:1.4;
+}
+.slide-antipatterns .ap-takeaway .tk-text .gold{color:var(--turmeric);font-style:normal;font-weight:900}
+
+/* ===========================================
+   SLIDE 12 — QUICK INTRO: WHAT IS KUBERNETES?
+   =========================================== */
+.slide-k8s{padding:0}
+.slide-k8s .k8s-header{
+    position:relative;z-index:1;padding:100px 96px 0;
+}
+.slide-k8s .k8s-header h2{
+    font-family:var(--font-display);font-weight:900;
+    font-size:60px;color:var(--cream);letter-spacing:-0.02em;line-height:1.05;
+}
+.slide-k8s .k8s-header h2 .gold{color:var(--turmeric)}
+.slide-k8s .k8s-body{
+    position:relative;z-index:1;
+    display:grid;grid-template-columns:1fr 1fr;
+    gap:64px;padding:48px 96px 0;align-items:start;
+}
+/* CSS manager illustration */
+.k8s-visual{
+    display:flex;flex-direction:column;align-items:center;gap:32px;
+}
+.manager-circle{
+    width:200px;height:200px;border:3px solid var(--turmeric);
+    border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-family:var(--font-display);font-weight:900;font-size:48px;
+    color:var(--turmeric);position:relative;
+    background:radial-gradient(circle,rgba(232,163,23,0.1),transparent);
+}
+.manager-circle::before{
+    content:"";position:absolute;inset:-20px;
+    border:1px dashed var(--turmeric);border-radius:50%;opacity:0.3;
+}
+.manager-label{
+    font-family:var(--font-mono);font-size:18px;color:var(--saffron);
+    text-align:center;font-style:italic;line-height:1.4;max-width:400px;
+}
+.k8s-does{
+    display:flex;flex-direction:column;gap:18px;
+}
+.k8s-does .does-label{
+    font-family:var(--font-mono);font-size:16px;color:var(--turmeric);
+    text-transform:uppercase;letter-spacing:0.12em;margin-bottom:4px;
+}
+.k8s-does .does-item{
+    display:flex;align-items:flex-start;gap:16px;
+    font-family:var(--font-mono);font-size:20px;color:var(--cream);
+    line-height:1.4;
+}
+.k8s-does .does-item .bullet{
+    color:var(--turmeric);font-weight:700;flex-shrink:0;
+}
+.k8s-does .does-item .dim{color:var(--cream-dim)}
+
+/* ===========================================
+   SLIDE 14 — THREE DESIGN PRINCIPLES
+   =========================================== */
+.slide-principles{padding:0}
+.slide-principles .pr-header{
+    position:relative;z-index:1;padding:100px 96px 0;
+}
+.slide-principles .pr-header h2{
+    font-family:var(--font-display);font-weight:900;
+    font-size:64px;color:var(--cream);letter-spacing:-0.02em;line-height:1;
+}
+.slide-principles .pr-header h2 .gold{color:var(--turmeric)}
+.slide-principles .pr-list{
+    position:relative;z-index:1;
+    display:flex;flex-direction:column;gap:28px;
+    padding:48px 96px 0;
+}
+.pr-item{
+    display:grid;grid-template-columns:100px 1fr 360px;
+    gap:32px;align-items:center;
+    padding:28px 36px;
+    background:var(--card-bg);border:1px solid var(--border-soft);
+    border-left:4px solid var(--turmeric);
+    border-radius:8px;
+}
+.pr-item .pr-num{
+    font-family:var(--font-display);font-weight:900;font-size:64px;
+    color:var(--turmeric);line-height:1;opacity:0.8;
+}
+.pr-item .pr-body .pr-title{
+    font-family:var(--font-display);font-weight:900;font-size:36px;
+    color:var(--cream);letter-spacing:-0.015em;line-height:1.1;
+}
+.pr-item .pr-body .pr-desc{
+    font-family:var(--font-mono);font-size:20px;color:var(--cream-dim);
+    margin-top:8px;line-height:1.4;
+}
+.pr-item .pr-analogy{
+    font-family:var(--font-mono);font-size:17px;color:var(--saffron);
+    font-style:italic;line-height:1.45;
+    border-left:2px solid var(--border);padding-left:20px;
+}
+
+/* ===========================================
+   SLIDE 16 — COMMUNICATION PATTERNS
+   =========================================== */
+.slide-comm{padding:0}
+.slide-comm .comm-header{
+    position:relative;z-index:1;padding:100px 96px 0;
+}
+.slide-comm .comm-header h2{
+    font-family:var(--font-display);font-weight:900;
+    font-size:64px;color:var(--cream);letter-spacing:-0.02em;line-height:1;
+}
+.slide-comm .comm-header h2 .gold{color:var(--turmeric)}
+.slide-comm .comm-header .comm-sub{
+    font-family:var(--font-mono);font-size:22px;color:var(--cream-dim);margin-top:12px;
+}
+.slide-comm .lanes{
+    position:relative;z-index:1;
+    display:grid;grid-template-columns:1fr 1fr;
+    gap:32px;padding:48px 96px 0;
+}
+.lane{
+    border-radius:10px;padding:36px 36px;
+    min-height:280px;display:flex;flex-direction:column;gap:20px;
+}
+.lane.sync{background:var(--chili-soft);border:1px solid var(--chili)}
+.lane.async{background:rgba(232,163,23,0.08);border:1px solid var(--turmeric)}
+.lane .lane-label{
+    font-family:var(--font-mono);font-size:16px;font-weight:700;
+    text-transform:uppercase;letter-spacing:0.12em;
+}
+.lane.sync .lane-label{color:var(--chili)}
+.lane.async .lane-label{color:var(--turmeric)}
+.lane .lane-name{
+    font-family:var(--font-display);font-weight:900;font-size:42px;
+    color:var(--cream);letter-spacing:-0.02em;line-height:1.05;
+}
+.lane .lane-analogy{
+    font-family:var(--font-mono);font-size:19px;color:var(--cream-dim);
+    line-height:1.45;font-style:italic;
+}
+.lane .lane-analogy .hl{font-style:normal;font-weight:700}
+.lane.sync .lane-analogy .hl{color:var(--chili)}
+.lane.async .lane-analogy .hl{color:var(--saffron)}
+.lane .lane-tech{
+    font-family:var(--font-mono);font-size:16px;color:var(--ash);
+    margin-top:auto;padding-top:16px;border-top:1px solid var(--border-soft);
+}
+.slide-comm .mesh-note{
+    position:relative;z-index:1;
+    margin:32px 96px 0;padding:24px 36px;
+    background:var(--card-bg-2);border:1px solid var(--border);
+    border-radius:8px;display:flex;align-items:center;gap:24px;
+}
+.slide-comm .mesh-note .mesh-icon{
+    font-family:var(--font-mono);font-size:28px;color:var(--turmeric);
+    flex-shrink:0;
+}
+.slide-comm .mesh-note .mesh-text{
+    font-family:var(--font-mono);font-size:20px;color:var(--cream);line-height:1.5;
+}
+.slide-comm .mesh-note .mesh-text .gold{color:var(--turmeric);font-weight:700}
+.slide-comm .mesh-note .mesh-text .chili{color:var(--chili);font-weight:700}
+
+/* ===========================================
+   SLIDE 17 — DEPLOYMENT STRATEGIES
+   =========================================== */
+.slide-deploy{padding:0}
+.slide-deploy .deploy-header{
+    position:relative;z-index:1;padding:100px 96px 0;
+}
+.slide-deploy .deploy-header h2{
+    font-family:var(--font-display);font-weight:900;
+    font-size:64px;color:var(--cream);letter-spacing:-0.02em;line-height:1;
+}
+.slide-deploy .deploy-header h2 .gold{color:var(--turmeric)}
+.slide-deploy .deploy-grid{
+    position:relative;z-index:1;
+    display:grid;grid-template-columns:repeat(3,1fr);
+    gap:32px;padding:56px 96px 0;
+}
+.deploy-card{
+    background:var(--card-bg);border:1px solid var(--border);
+    border-radius:10px;padding:36px 32px;
+    display:flex;flex-direction:column;gap:24px;min-height:380px;
+}
+.deploy-card .deploy-icon{
+    width:64px;height:64px;border-radius:12px;
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--font-mono);font-size:28px;font-weight:700;
+}
+.deploy-card.blue-green .deploy-icon{background:var(--chili);color:var(--charcoal)}
+.deploy-card.canary .deploy-icon{background:var(--turmeric);color:var(--charcoal)}
+.deploy-card.rolling .deploy-icon{background:var(--saffron);color:var(--charcoal)}
+.deploy-card .deploy-name{
+    font-family:var(--font-display);font-weight:900;font-size:38px;
+    color:var(--cream);letter-spacing:-0.015em;line-height:1.05;
+}
+.deploy-card .deploy-desc{
+    font-family:var(--font-mono);font-size:19px;color:var(--cream-dim);
+    line-height:1.5;flex-grow:1;
+}
+.deploy-card .deploy-desc .hl{color:var(--saffron)}
+.deploy-card .deploy-tag{
+    font-family:var(--font-mono);font-size:15px;font-weight:700;
+    text-transform:uppercase;letter-spacing:0.1em;
+    padding:8px 16px;border-radius:6px;align-self:flex-start;
+}
+.deploy-card.blue-green .deploy-tag{background:var(--chili-soft);color:var(--chili)}
+.deploy-card.canary .deploy-tag{background:rgba(232,163,23,0.12);color:var(--turmeric)}
+.deploy-card.rolling .deploy-tag{background:rgba(242,193,78,0.12);color:var(--saffron)}
+.slide-deploy .deploy-rule{
+    position:relative;z-index:1;
+    margin:36px 96px 0;padding:24px 36px;
+    border:1px solid var(--chili);border-radius:8px;
+    background:rgba(214,69,65,0.08);text-align:center;
+}
+.slide-deploy .deploy-rule .dr-text{
+    font-family:var(--font-display);font-weight:600;font-style:italic;
+    font-size:26px;color:var(--cream);
+}
+.slide-deploy .deploy-rule .dr-text .chili{color:var(--chili);font-style:normal;font-weight:900}
+
+/* ===========================================
+   SLIDE 19 — THREE PILLARS OF OBSERVABILITY
+   =========================================== */
+.slide-obs{padding:0}
+.slide-obs .obs-header{
+    position:relative;z-index:1;padding:100px 96px 0;
+}
+.slide-obs .obs-header h2{
+    font-family:var(--font-display);font-weight:900;
+    font-size:64px;color:var(--cream);letter-spacing:-0.02em;line-height:1;
+}
+.slide-obs .obs-header h2 .gold{color:var(--turmeric)}
+.slide-obs .obs-grid{
+    position:relative;z-index:1;
+    display:grid;grid-template-columns:repeat(3,1fr);
+    gap:32px;padding:48px 96px 0;
+}
+.obs-card{
+    background:var(--card-bg);border:1px solid var(--border);
+    border-radius:10px;padding:36px 32px;
+    display:flex;flex-direction:column;gap:20px;min-height:340px;
+}
+.obs-card .obs-icon{
+    font-family:var(--font-mono);font-size:36px;font-weight:800;
+    width:72px;height:72px;border-radius:50%;
+    border:2px solid var(--turmeric);color:var(--turmeric);
+    display:flex;align-items:center;justify-content:center;
+}
+.obs-card .obs-name{
+    font-family:var(--font-display);font-weight:900;font-size:36px;
+    color:var(--cream);letter-spacing:-0.015em;line-height:1.05;
+}
+.obs-card .obs-analogy{
+    font-family:var(--font-mono);font-size:19px;color:var(--saffron);
+    font-style:italic;line-height:1.45;flex-grow:1;
+}
+.obs-card .obs-desc{
+    font-family:var(--font-mono);font-size:17px;color:var(--cream-dim);
+    line-height:1.5;
+}
+.slide-obs .obs-takeaway{
+    position:relative;z-index:1;
+    margin:36px 96px 0;padding:28px 36px;
+    border:1px solid var(--chili);border-radius:8px;
+    background:var(--chili-soft);
+    display:flex;align-items:center;gap:20px;
+}
+.slide-obs .obs-takeaway .tk-icon{
+    font-family:var(--font-mono);font-size:24px;color:var(--chili);flex-shrink:0;
+}
+.slide-obs .obs-takeaway .tk-text{
+    font-family:var(--font-display);font-weight:600;font-style:italic;
+    font-size:24px;color:var(--cream);line-height:1.4;
+}
+.slide-obs .obs-takeaway .tk-text .chili{color:var(--chili);font-style:normal;font-weight:900}
+.slide-obs .obs-tools{
+    position:relative;z-index:1;
+    margin:20px 96px 0;
+    display:flex;gap:16px;align-items:center;
+}
+.slide-obs .obs-tools .tools-label{
+    font-family:var(--font-mono);font-size:15px;color:var(--ash);
+    text-transform:uppercase;letter-spacing:0.12em;
+}
+.slide-obs .obs-tools .tool-pill{
+    font-family:var(--font-mono);font-size:16px;font-weight:700;
+    color:var(--turmeric);padding:6px 18px;
+    border:1px solid var(--border);border-radius:20px;
+}
+
+/* ===========================================
+   SLIDE 20 — RESILIENCE PATTERNS
+   =========================================== */
+.slide-resilience{padding:0}
+.slide-resilience .res-header{
+    position:relative;z-index:1;padding:100px 96px 0;
+}
+.slide-resilience .res-header h2{
+    font-family:var(--font-display);font-weight:900;
+    font-size:64px;color:var(--cream);letter-spacing:-0.02em;line-height:1;
+}
+.slide-resilience .res-header h2 .gold{color:var(--turmeric)}
+.slide-resilience .res-list{
+    position:relative;z-index:1;
+    display:flex;flex-direction:column;gap:24px;
+    padding:48px 96px 0;
+}
+.res-item{
+    display:grid;grid-template-columns:280px 1fr;
+    gap:40px;align-items:center;
+    padding:32px 36px;
+    background:var(--card-bg);border:1px solid var(--border-soft);
+    border-left:4px solid var(--turmeric);
+    border-radius:8px;
+}
+.res-item .res-left .res-name{
+    font-family:var(--font-display);font-weight:900;font-size:34px;
+    color:var(--turmeric);letter-spacing:-0.015em;line-height:1.05;
+}
+.res-item .res-left .res-tag{
+    font-family:var(--font-mono);font-size:15px;color:var(--ash);
+    text-transform:uppercase;letter-spacing:0.1em;margin-top:8px;
+}
+.res-item .res-desc{
+    font-family:var(--font-mono);font-size:20px;color:var(--cream);
+    line-height:1.5;
+}
+.res-item .res-desc .dim{color:var(--cream-dim)}
+.res-item .res-desc .chili{color:var(--chili)}
+.res-item .res-desc .saffron{color:var(--saffron)}
+.slide-resilience .res-bottom{
+    position:relative;z-index:1;
+    margin:32px 96px 0;padding:24px 36px;
+    border:1px solid var(--chili);border-radius:8px;
+    background:rgba(214,69,65,0.08);text-align:center;
+}
+.slide-resilience .res-bottom .rb-text{
+    font-family:var(--font-display);font-weight:600;font-style:italic;
+    font-size:26px;color:var(--cream);
+}
+.slide-resilience .res-bottom .rb-text .chili{color:var(--chili);font-style:normal;font-weight:900}
+
+/* ===========================================
+   SLIDE 21 — THE REAL STORY (CASE STUDY)
+   =========================================== */
+.slide-case{padding:0}
+.slide-case .case-header{
+    position:relative;z-index:1;padding:100px 96px 0;
+}
+.slide-case .case-header .case-label{
+    font-family:var(--font-mono);font-size:18px;color:var(--chili);
+    text-transform:uppercase;letter-spacing:0.14em;margin-bottom:16px;
+}
+.slide-case .case-header h2{
+    font-family:var(--font-display);font-weight:900;
+    font-size:56px;color:var(--cream);letter-spacing:-0.02em;line-height:1.05;
+}
+.slide-case .case-timeline{
+    position:relative;z-index:1;
+    padding:48px 96px 0;
+    display:grid;grid-template-columns:repeat(4,1fr);
+    gap:24px;
+}
+.case-step{
+    background:var(--card-bg);border:1px solid var(--border-soft);
+    border-radius:8px;padding:28px 24px;
+    display:flex;flex-direction:column;gap:16px;min-height:260px;
+    position:relative;
+}
+.case-step .step-label{
+    font-family:var(--font-mono);font-size:14px;font-weight:700;
+    text-transform:uppercase;letter-spacing:0.1em;
+}
+.case-step.before .step-label{color:var(--chili)}
+.case-step.move .step-label{color:var(--saffron)}
+.case-step.first-month .step-label{color:var(--chili)}
+.case-step.after .step-label{color:var(--turmeric)}
+.case-step .step-title{
+    font-family:var(--font-display);font-weight:700;font-size:24px;
+    color:var(--cream);line-height:1.15;letter-spacing:-0.01em;
+}
+.case-step .step-desc{
+    font-family:var(--font-mono);font-size:16px;color:var(--cream-dim);
+    line-height:1.5;flex-grow:1;
+}
+.case-step .step-desc .hl{color:var(--saffron);font-weight:700}
+.case-step.after{border-color:var(--turmeric);background:rgba(232,163,23,0.08)}
+.case-step.after .step-title{color:var(--turmeric)}
+.case-step .step-num{
+    position:absolute;top:-12px;left:24px;
+    font-family:var(--font-mono);font-size:14px;font-weight:800;
+    background:var(--charcoal);padding:2px 12px;border-radius:4px;
+    color:var(--turmeric);border:1px solid var(--border);
+}
+.case-step.before .step-num{color:var(--chili);border-color:var(--chili)}
+.case-step.first-month .step-num{color:var(--chili);border-color:var(--chili)}
+.case-step.after .step-num{color:var(--turmeric)}
+.slide-case .case-fixes{
+    position:relative;z-index:1;
+    margin:32px 96px 0;padding:24px 36px;
+    border:1px solid var(--turmeric);border-radius:8px;
+    background:rgba(232,163,23,0.06);
+}
+.slide-case .case-fixes .fix-label{
+    font-family:var(--font-mono);font-size:15px;color:var(--turmeric);
+    text-transform:uppercase;letter-spacing:0.14em;margin-bottom:12px;
+}
+.slide-case .case-fixes .fix-list{
+    font-family:var(--font-mono);font-size:19px;color:var(--cream);
+    line-height:1.8;
+}
+.slide-case .case-fixes .fix-list .num{color:var(--turmeric);font-weight:700}
+.slide-case .case-punchline{
+    position:relative;z-index:1;
+    margin:24px 96px 0;text-align:center;
+}
+.slide-case .case-punchline .cp-text{
+    font-family:var(--font-display);font-weight:600;font-style:italic;
+    font-size:30px;color:var(--cream);
+}
+.slide-case .case-punchline .cp-text .gold{color:var(--turmeric);font-style:normal;font-weight:900}
+
+/* ===========================================
+   SLIDE 22 — KEY TAKEAWAYS
+   =========================================== */
+.slide-takeaways{padding:0}
+.slide-takeaways .tk-header{
+    position:relative;z-index:1;padding:100px 96px 0;
+}
+.slide-takeaways .tk-header h2{
+    font-family:var(--font-display);font-weight:900;
+    font-size:64px;color:var(--cream);letter-spacing:-0.02em;line-height:1;
+}
+.slide-takeaways .tk-header h2 .gold{color:var(--turmeric)}
+.slide-takeaways .tk-grid{
+    position:relative;z-index:1;
+    display:grid;grid-template-columns:1fr 1fr;
+    gap:28px;padding:48px 96px 0;
+}
+.tk-card{
+    background:var(--card-bg);border:1px solid var(--border-soft);
+    border-radius:10px;padding:32px 36px;
+    display:flex;flex-direction:column;gap:16px;
+}
+.tk-card .tk-num{
+    font-family:var(--font-display);font-weight:900;font-size:48px;
+    color:var(--turmeric);line-height:1;opacity:0.8;
+}
+.tk-card .tk-body{
+    font-family:var(--font-display);font-weight:600;font-style:italic;
+    font-size:26px;color:var(--cream);line-height:1.3;letter-spacing:-0.01em;
+}
+.tk-card .tk-body .gold{color:var(--turmeric);font-style:normal;font-weight:900}
+.tk-card .tk-body .chili{color:var(--chili);font-style:normal;font-weight:900}
+
+/* ===========================================
+   SLIDE 23 — THANK YOU / Q&A
+   =========================================== */
+.slide-thanks{padding:0;display:flex;align-items:center;justify-content:center;
+    background:
+        radial-gradient(ellipse at 50% 40%, var(--turmeric-glow) 0%, transparent 60%),
+        var(--charcoal);
+}
+.slide-thanks .thanks-content{
+    position:relative;z-index:1;text-align:center;padding:0 120px;
+}
+.slide-thanks h2{
+    font-family:var(--font-display);font-weight:900;
+    font-size:140px;color:var(--cream);letter-spacing:-0.03em;line-height:0.95;
+}
+.slide-thanks h2 .gold{color:var(--turmeric)}
+.slide-thanks .thanks-sub{
+    font-family:var(--font-mono);font-size:24px;color:var(--cream-dim);
+    margin-top:24px;
+}
+.slide-thanks .thanks-sub .chili{color:var(--chili);font-weight:700}
+.slide-thanks .contact-grid{
+    display:grid;grid-template-columns:repeat(3,1fr);
+    gap:20px;margin-top:48px;max-width:900px;margin-left:auto;margin-right:auto;
+}
+.contact-card{
+    background:var(--card-bg);border:1px solid var(--border-soft);
+    border-radius:8px;padding:20px 16px;text-align:center;
+}
+.contact-card .ct-label{
+    font-family:var(--font-mono);font-size:14px;color:var(--turmeric);
+    text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px;
+}
+.contact-card .ct-value{
+    font-family:var(--font-mono);font-size:18px;color:var(--cream);font-weight:500;
+}
+.slide-thanks .resources{
+    margin-top:40px;padding:24px 36px;
+    border:1px solid var(--border);border-radius:8px;
+    background:var(--card-bg-2);
+    display:inline-block;text-align:left;
+}
+.slide-thanks .resources .res-label{
+    font-family:var(--font-mono);font-size:15px;color:var(--turmeric);
+    text-transform:uppercase;letter-spacing:0.14em;margin-bottom:12px;
+}
+.slide-thanks .resources .res-list{
+    font-family:var(--font-mono);font-size:18px;color:var(--cream-dim);line-height:1.7;
+}
+.slide-thanks .resources .res-list .hl{color:var(--saffron)}
+
+/* ===========================================
+   DECK CONTROLS — progress bar (outside stage)
+   =========================================== */
+.deck-controls{
+    position:fixed;left:50%;bottom:22px;
+    transform:translateX(-50%);z-index:1000;
+    display:flex;align-items:center;gap:16px;
+    font-family:var(--font-mono);font-size:14px;color:var(--cream-dim);
+    background:rgba(20,18,16,0.85);padding:8px 20px;border-radius:24px;
+    border:1px solid var(--border-soft);backdrop-filter:blur(8px);
+}
+.deck-controls .progress-track{
+    width:200px;height:4px;background:var(--ash);border-radius:2px;overflow:hidden;
+}
+.deck-controls .progress-fill{
+    height:100%;background:var(--turmeric);border-radius:2px;
+    transition:width 0.4s var(--ease-out-expo);
+}
+.deck-controls .nav-hint{color:var(--ash);font-size:12px}
+
+/* ===========================================
+   MODAL SYSTEM — overlay for interactive popups
+   =========================================== */
+.modal-overlay{position:fixed;inset:0;z-index:100000;visibility:hidden;opacity:0;transition:opacity .4s,visibility .4s;display:flex;align-items:center;justify-content:center}
+.modal-overlay.active{visibility:visible;opacity:1}
+.modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);cursor:pointer}
+.modal-container{position:relative;max-width:1100px;width:90%;max-height:80vh;overflow-y:auto;background:var(--charcoal-2);border:1px solid var(--border);border-radius:16px;padding:48px 56px;box-shadow:0 24px 80px rgba(0,0,0,.5)}
+.modal-close{position:absolute;top:16px;right:20px;background:none;border:none;font-size:28px;color:var(--cream-dim);cursor:pointer;z-index:1;transition:color .2s;line-height:1}
+.modal-close:hover{color:var(--chili)}
+.modal-title{font-family:var(--font-display);font-weight:900;font-size:42px;color:var(--cream);letter-spacing:-0.02em;line-height:1.05;margin-bottom:8px}
+.modal-title .gold{color:var(--turmeric)}
+.modal-subtitle{font-family:var(--font-mono);font-size:18px;color:var(--turmeric);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:24px}
+.modal-body{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center}
+.modal-diagram{display:flex;flex-direction:column;align-items:center;gap:20px;min-height:300px;justify-content:center}
+.modal-text{font-family:var(--font-mono);font-size:19px;color:var(--cream-dim);line-height:1.6}
+.modal-text .hl{color:var(--saffron)}
+.modal-text .gold{color:var(--turmeric);font-weight:700}
+.modal-text .chili{color:var(--chili);font-weight:700}
+.modal-text .green{color:var(--green);font-weight:700}
+.modal-hint{font-family:var(--font-mono);font-size:14px;color:var(--ash);text-transform:uppercase;letter-spacing:0.1em;margin-top:16px;text-align:center}
+
+/* === CLICKABLE CARD INDICATOR === */
+.clickable{cursor:pointer;transition:transform .2s,box-shadow .2s,border-color .2s;position:relative}
+.clickable:hover{transform:translateY(-4px);box-shadow:0 12px 40px rgba(232,163,23,0.15);border-color:var(--turmeric)!important}
+.click-hint{position:absolute;top:12px;right:16px;font-family:var(--font-mono);font-size:13px;color:var(--turmeric);opacity:0;transition:opacity .2s;text-transform:uppercase;letter-spacing:0.08em}
+.clickable:hover .click-hint{opacity:0.7}
+
+/* === ANIMATED DIAGRAM: SYNC vs ASYNC (slide 18) === */
+.flow-diagram{display:flex;flex-direction:column;gap:28px}
+.flow-lane{border-radius:10px;padding:24px 28px;position:relative;overflow:hidden}
+.flow-lane.sync{background:var(--chili-soft);border:1px solid var(--chili)}
+.flow-lane.async{background:rgba(232,163,23,0.08);border:1px solid var(--turmeric)}
+.flow-lane-label{font-family:var(--font-mono);font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:16px}
+.flow-lane.sync .flow-lane-label{color:var(--chili)}
+.flow-lane.async .flow-lane-label{color:var(--turmeric)}
+.flow-chain{display:flex;align-items:center;gap:0;justify-content:center;height:80px}
+.flow-node{width:80px;height:60px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:14px;font-weight:700;border:2px solid;flex-shrink:0}
+.flow-lane.sync .flow-node{border-color:var(--chili);color:var(--chili);background:rgba(214,69,65,0.08)}
+.flow-lane.async .flow-node{border-color:var(--turmeric);color:var(--turmeric);background:rgba(232,163,23,0.08)}
+.flow-arrow{width:40px;height:2px;background:var(--ash);flex-shrink:0;position:relative}
+.flow-dot{width:12px;height:12px;border-radius:50%;position:absolute;top:50%;transform:translateY(-50%)}
+.flow-lane.sync .flow-dot{background:var(--chili);animation:syncMove 3s ease-in-out infinite}
+.flow-lane.async .flow-dot{background:var(--turmeric);animation:asyncMove 3s ease-in-out infinite}
+@keyframes syncMove{0%{left:0;opacity:1}15%{left:calc(50% - 6px);opacity:1}30%{left:calc(50% - 6px);opacity:1;transform:translateY(-50%) scale(0.5)}45%{left:calc(50% - 6px);opacity:0.3}60%{left:calc(100% - 12px);opacity:1;transform:translateY(-50%) scale(1)}100%{left:calc(100% - 12px);opacity:1}}
+@keyframes asyncMove{0%{left:0;opacity:1}20%{left:40px;opacity:1}25%{left:40px;opacity:0;transform:translateY(-50%) scale(0.3)}30%{left:40px;opacity:0}100%{left:40px;opacity:0}}
+.flow-queue{width:80px;height:60px;border:2px dashed var(--turmeric);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:12px;color:var(--turmeric);background:rgba(232,163,23,0.04)}
+
+/* === TERMINAL SIMULATION (slide 21) === */
+.obs-terminals{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;padding:0 96px;margin-top:32px;position:relative;z-index:1}
+.obs-terminal{background:#0d0c0a;border:1px solid var(--border-soft);border-radius:8px;overflow:hidden;min-height:320px}
+.obs-terminal-header{display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid var(--border-soft);background:rgba(255,255,255,0.02)}
+.obs-terminal-dot{width:12px;height:12px;border-radius:50%}
+.obs-terminal-dot.r{background:#ff5f56}
+.obs-terminal-dot.y{background:#ffbd2e}
+.obs-terminal-dot.g{background:#27c93f}
+.obs-terminal-title{font-family:var(--font-mono);font-size:13px;color:var(--cream-dim);margin-left:8px}
+.obs-terminal-body{padding:16px;font-family:var(--font-mono);font-size:14px;line-height:1.7;min-height:260px;white-space:pre-wrap;word-break:break-all}
+.obs-terminal-body .log-line{color:var(--green)}
+.obs-terminal-body .log-time{color:var(--ash)}
+.obs-terminal-body .metric-val{color:var(--saffron);font-weight:700}
+.obs-terminal-body .trace-arrow{color:var(--turmeric)}
+.obs-terminal-body .trace-ok{color:var(--green);font-weight:700}
+.obs-terminal-body .cursor-blink{display:inline-block;width:8px;height:16px;background:var(--turmeric);animation:blink 1.1s steps(2) infinite;vertical-align:middle}
+
+/* === ANTI-PATTERN DIAGRAM STYLES (slides 11-13) === */
+.nano-chain{display:flex;align-items:center;gap:8px;justify-content:center;flex-wrap:wrap;margin:20px 0}
+.nano-node{padding:12px 20px;border:2px solid var(--chili);border-radius:8px;font-family:var(--font-mono);font-size:16px;color:var(--chili);background:rgba(214,69,65,0.08);text-align:center}
+.nano-arrow{color:var(--ash);font-size:24px}
+.nano-fail{padding:12px 20px;border:2px solid var(--chili);border-radius:8px;font-family:var(--font-mono);font-size:14px;color:var(--chili);background:var(--chili-soft);font-weight:700}
+.cascade-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin:20px 0}
+.cascade-node{padding:16px 8px;border:1px solid var(--border-soft);border-radius:8px;text-align:center;font-family:var(--font-mono);font-size:13px;color:var(--cream-dim);transition:all .5s}
+.cascade-node.down{border-color:var(--chili);background:var(--chili-soft);color:var(--chili);animation:cascadeFall .8s ease-out forwards}
+.cascade-node:nth-child(1).down{animation-delay:0s}
+.cascade-node:nth-child(2).down{animation-delay:.15s}
+.cascade-node:nth-child(3).down{animation-delay:.3s}
+.cascade-node:nth-child(4).down{animation-delay:.45s}
+.cascade-node:nth-child(5).down{animation-delay:.6s}
+.cascade-node:nth-child(6).down{animation-delay:.75s}
+@keyframes cascadeFall{0%{opacity:1}100%{opacity:0.4;border-color:var(--chili);background:var(--chili-soft)}}
+.cncf-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin:24px 0}
+.cncf-stat{text-align:center;padding:28px 20px;background:var(--card-bg);border:1px solid var(--border);border-radius:10px}
+.cncf-stat .stat-num{font-family:var(--font-display);font-weight:900;font-size:56px;color:var(--turmeric);line-height:1}
+.cncf-stat .stat-label{font-family:var(--font-mono);font-size:15px;color:var(--cream-dim);margin-top:10px;text-transform:uppercase;letter-spacing:0.1em}
+.cncf-projects{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px;justify-content:center}
+.cncf-pill{font-family:var(--font-mono);font-size:15px;color:var(--saffron);padding:6px 16px;border:1px solid var(--border);border-radius:20px}
+
+/* === K8S LOGO IMAGE === */
+.k8s-logo-img{max-width:280px;max-height:280px;object-fit:contain;filter:drop-shadow(0 0 40px rgba(232,163,23,0.3))}
+
+/* === SLIDE IMAGE STYLES === */
+.slide-img{border-radius:12px;border:1px solid var(--border-soft);box-shadow:0 12px 40px rgba(0,0,0,0.4);object-fit:cover}
+.slide-img-bg-removed{filter:drop-shadow(0 0 30px rgba(232,163,23,0.2))}
+.dosa-decoration{position:absolute;bottom:60px;right:96px;width:200px;height:auto;opacity:0.15;transform:rotate(-15deg);pointer-events:none;z-index:0}
+.cafe-image{width:100%;max-height:400px;object-fit:cover;border-radius:12px;border:1px solid var(--border-soft)}
+.chef-image{width:100%;max-height:360px;object-fit:cover;border-radius:12px;border:1px solid var(--border-soft)}
+.counter-image{width:100%;max-height:300px;object-fit:cover;border-radius:12px;border:1px solid var(--border-soft)}
+
+/* === MODAL ANIMATED DIAGRAMS === */
+.modal-split-box{display:flex;align-items:center;gap:40px;justify-content:center;width:100%}
+.modal-monolith-box{width:200px;height:160px;border:2px solid var(--chili);border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:16px;color:var(--chili);background:var(--chili-soft);text-align:center;animation:monoFade 2s ease-in-out infinite}
+@keyframes monoFade{0%,40%{opacity:1;transform:scale(1)}60%,100%{opacity:0.2;transform:scale(0.8)}}
+.modal-services-stack{display:flex;flex-direction:column;gap:12px}
+.modal-service-box{padding:14px 28px;border:2px solid var(--turmeric);border-radius:8px;font-family:var(--font-mono);font-size:15px;color:var(--turmeric);background:rgba(232,163,23,0.06);animation:svcSlide .6s ease-out forwards;opacity:0}
+@keyframes svcSlide{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
+.modal-service-box:nth-child(1){animation-delay:.3s}
+.modal-service-box:nth-child(2){animation-delay:.5s}
+.modal-service-box:nth-child(3){animation-delay:.7s}
+
+/* Pod lifecycle animation */
+.pod-lifecycle{display:flex;align-items:center;gap:24px;justify-content:center;width:100%}
+.pod-state{width:100px;height:100px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:14px;font-weight:700;border:2px solid;text-align:center;line-height:1.3;animation:podCycle 6s ease-in-out infinite}
+@keyframes podCycle{0%,20%{border-color:var(--green);color:var(--green);background:rgba(127,176,105,0.1)}25%,40%{border-color:var(--chili);color:var(--chili);background:var(--chili-soft)}45%,60%{border-color:var(--ash);color:var(--ash);background:rgba(92,86,72,0.1)}65%,80%{border-color:var(--turmeric);color:var(--turmeric);background:rgba(232,163,23,0.08)}85%,100%{border-color:var(--green);color:var(--green);background:rgba(127,176,105,0.1)}}
+.pod-arrow{font-size:24px;color:var(--ash)}
+
+/* Blue-green animation */
+.bg-envs{display:flex;gap:40px;justify-content:center;width:100%}
+.bg-env{width:180px;height:200px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;border:2px solid}
+.bg-env.blue{border-color:var(--chili);background:rgba(214,69,65,0.08)}
+.bg-env.green{border-color:var(--green);background:rgba(127,176,105,0.08)}
+.bg-env .bg-label{font-family:var(--font-mono);font-size:14px;font-weight:700;text-transform:uppercase}
+.bg-env.blue .bg-label{color:var(--chili)}
+.bg-env.green .bg-label{color:var(--green)}
+.bg-env .bg-dots{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;width:120px}
+.bg-dot{width:16px;height:16px;border-radius:50%;animation:bgMove 3s ease-in-out infinite}
+.bg-env.blue .bg-dot{background:var(--chili)}
+.bg-env.green .bg-dot{background:var(--green);opacity:0}
+@keyframes bgMove{0%,30%{opacity:1;transform:scale(1)}50%,100%{opacity:0;transform:scale(0.5)}}
+.bg-env.green .bg-dot{animation:bgFill 3s ease-in-out infinite}
+@keyframes bgFill{0%,30%{opacity:0;transform:scale(0.5)}50%,100%{opacity:1;transform:scale(1)}}
+
+/* Canary fill animation */
+.canary-gauge{width:100%;max-width:400px;height:200px;display:flex;flex-direction:column;gap:16px;align-items:center}
+.canary-bar-bg{width:100%;height:40px;background:var(--ash);border-radius:20px;overflow:hidden;position:relative}
+.canary-bar-fill{height:100%;background:linear-gradient(90deg,var(--chili),var(--turmeric),var(--green));border-radius:20px;animation:canaryFill 4s ease-in-out infinite}
+@keyframes canaryFill{0%{width:10%}25%{width:10%}30%{width:25%}50%{width:25%}55%{width:50%}75%{width:50%}80%{width:100%}100%{width:100%}}
+.canary-pct{font-family:var(--font-display);font-weight:900;font-size:48px;color:var(--turmeric)}
+
+/* Rolling update animation */
+.rolling-pods{display:flex;gap:12px;justify-content:center;width:100%}
+.rolling-pod{width:80px;height:80px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:12px;font-weight:700;border:2px solid;animation:rollingUpdate 5s ease-in-out infinite}
+@keyframes rollingUpdate{0%,10%{border-color:var(--ash);color:var(--ash);background:rgba(92,86,72,0.1)}20%,30%{border-color:var(--chili);color:var(--chili);background:var(--chili-soft)}40%,50%{border-color:var(--turmeric);color:var(--turmeric);background:rgba(232,163,23,0.08)}}
+.rolling-pod:nth-child(1){animation-delay:0s}
+.rolling-pod:nth-child(2){animation-delay:.8s}
+.rolling-pod:nth-child(3){animation-delay:1.6s}
+.rolling-pod:nth-child(4){animation-delay:2.4s}
+.rolling-pod:nth-child(5){animation-delay:3.2s}
+
+/* Circuit breaker animation */
+.cb-states{display:flex;gap:32px;justify-content:center;align-items:center;width:100%}
+.cb-state{width:120px;height:120px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:13px;font-weight:700;text-align:center;line-height:1.3;border:3px solid;animation:cbCycle 6s ease-in-out infinite}
+@keyframes cbCycle{0%,25%{border-color:var(--green);color:var(--green);background:rgba(127,176,105,0.1)}30%,55%{border-color:var(--chili);color:var(--chili);background:var(--chili-soft)}60%,75%{border-color:var(--saffron);color:var(--saffron);background:rgba(242,193,78,0.08)}80%,100%{border-color:var(--green);color:var(--green);background:rgba(127,176,105,0.1)}}
+.cb-state:nth-child(1){animation-delay:0s}
+.cb-state:nth-child(2){animation-delay:1.5s}
+.cb-state:nth-child(3){animation-delay:3s}
+
+/* Rate limiting bucket animation */
+.rl-bucket{display:flex;flex-direction:column;align-items:center;gap:16px;width:100%}
+.rl-slots{display:flex;gap:8px}
+.rl-slot{width:50px;height:50px;border-radius:8px;border:2px solid var(--turmeric);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:16px;color:var(--turmeric);animation:rlFill 4s ease-in-out infinite}
+.rl-slot:nth-child(1){animation-delay:0s}
+.rl-slot:nth-child(2){animation-delay:.3s}
+.rl-slot:nth-child(3){animation-delay:.6s}
+.rl-slot:nth-child(4){animation-delay:.9s}
+.rl-slot:nth-child(5){animation-delay:1.2s}
+@keyframes rlFill{0%,20%{background:transparent;opacity:0.5}30%,60%{background:rgba(232,163,23,0.15);opacity:1}70%,100%{background:transparent;opacity:0.5}}
+.rl-queue{font-family:var(--font-mono);font-size:16px;color:var(--chili)}
+
+/* Retry timeline animation */
+.retry-timeline{display:flex;flex-direction:column;gap:16px;width:100%;max-width:400px}
+.retry-step{display:flex;align-items:center;gap:16px;opacity:0;animation:retryAppear .5s ease-out forwards}
+@keyframes retryAppear{to{opacity:1}}
+.retry-step:nth-child(1){animation-delay:.3s}
+.retry-step:nth-child(2){animation-delay:1.5s}
+.retry-step:nth-child(3){animation-delay:3s}
+.retry-step:nth-child(4){animation-delay:5s}
+.retry-step:nth-child(5){animation-delay:7s}
+.retry-time{font-family:var(--font-mono);font-size:14px;color:var(--turmeric);min-width:60px;font-weight:700}
+.retry-icon{font-size:20px}
+.retry-text{font-family:var(--font-mono);font-size:14px;color:var(--cream-dim)}
+
+/* === STATELESS vs STATEFUL animation === */
+.state-grid{display:grid;grid-template-columns:1fr 1fr;gap:32px;width:100%}
+.state-col{text-align:center}
+.state-col .state-label{font-family:var(--font-mono);font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:16px}
+.state-col.good .state-label{color:var(--green)}
+.state-col.bad .state-label{color:var(--chili)}
+.state-node{padding:16px;border:2px solid;border-radius:8px;margin-bottom:8px;font-family:var(--font-mono);font-size:14px}
+.state-col.good .state-node{border-color:var(--green);color:var(--green);background:rgba(127,176,105,0.08)}
+.state-col.bad .state-node{border-color:var(--chili);color:var(--chili);background:var(--chili-soft)}
+
+/* ===========================================
+   KIMCHI.DEV CREDIT PILL — bottom right
+   =========================================== */
+.kimchi-pill{
+    position:fixed;bottom:18px;right:24px;z-index:999;
+    display:flex;align-items:center;gap:8px;
+    font-family:var(--font-mono);font-size:12px;color:var(--cream-dim);
+    background:rgba(20,18,16,0.85);padding:6px 16px;border-radius:20px;
+    border:1px solid var(--border-soft);backdrop-filter:blur(8px);
+    text-decoration:none;transition:color .2s,border-color .2s;
+}
+.kimchi-pill:hover{color:var(--turmeric);border-color:var(--turmeric)}
+.kimchi-pill .kimchi-logo{
+    font-weight:800;color:var(--turmeric);font-size:13px;
+}
+.kimchi-pill .kimchi-text{font-size:11px;color:var(--ash)}
+.kimchi-pill .kimchi-text .kw{color:var(--cream-dim)}
+
+/* ===========================================
+   INLINE EDITING (included by default)
+   =========================================== */
+.edit-hotzone{
+    position:fixed;top:0;left:0;width:80px;height:80px;z-index:10000;cursor:pointer;
+}
+.edit-toggle{
+    position:fixed;top:16px;left:16px;z-index:10001;
+    opacity:0;pointer-events:none;
+    transition:opacity 0.3s ease;
+    background:var(--charcoal-2);color:var(--turmeric);
+    border:1px solid var(--border);border-radius:8px;
+    padding:8px 14px;font-family:var(--font-mono);font-size:14px;
+    cursor:pointer;
+}
+.edit-toggle.show,.edit-toggle.active{opacity:1;pointer-events:auto}
+.edit-toggle.active{background:var(--turmeric);color:var(--charcoal)}
+body.edit-mode .slide-content [contenteditable="true"]{
+    outline:2px dashed var(--turmeric);outline-offset:4px;cursor:text;
+}
+body.edit-mode .slide-content [contenteditable="true"]:focus{
+    outline-color:var(--chili);background:rgba(232,163,23,0.05);
+}
+body.edit-mode::after{
+    content:"EDIT MODE — click any text to edit · Ctrl+S to save · E to exit";
+    position:fixed;bottom:60px;left:50%;transform:translateX(-50%);
+    font-family:var(--font-mono);font-size:13px;color:var(--turmeric);
+    background:rgba(20,18,16,0.9);padding:8px 20px;border-radius:20px;
+    border:1px solid var(--border);z-index:10001;
+}
+
+</style>
+</head>
+<body>
+<div class="deck-viewport">
+    <main class="deck-stage" id="deckStage">
+
+        <!-- ====================================================================
+             SLIDE 1 — TITLE
+             ==================================================================== -->
+        <section class="slide slide-title active" data-slide="1">
+            <!-- Speaker notes: Hey everyone, thanks for joining on a Wednesday evening.
+                 I know you could be doom-scrolling Instagram or ordering food on Swiggy right now,
+                 so I promise I'll make this worth your time. Tonight we're talking about
+                 microservices on Kubernetes, but I'm not going to throw 50 YAML files at you.
+                 We're going to tell a story. And that story starts with a dosa.
+                 Quick thing since this is virtual: the chat is our conversation. Drop reactions,
+                 drop comments, answer my questions there. The more you engage, the more fun this is. -->
+            <div class="terminal-grid"></div>
+            <div class="turmeric-glow"></div>
+            <div class="corner-mark mark-reveal">v1.0<br>k8s</div>
+
+            <div class="topbar reveal">
+                <div class="prompt">$ <span class="typed">kubectl get talks --field-selector theme=microservices</span><span class="cursor"></span></div>
+                <div class="counter"><span class="now">01</span><span class="sep">/</span>25</div>
+            </div>
+
+            <div class="hero">
+                <div class="kicker-tag tag-reveal"><span class="chili-dot"></span>Structuring Microservices on Kubernetes</div>
+                <h1>
+                    <span class="up line-reveal">scaling up,</span>
+                    <span class="break line-reveal"><span class="strike">breaking</span> down.</span>
+                </h1>
+                <p class="subtitle sub-reveal">A story about <span class="hl">dosas</span>, <span class="hl-red">traffic jams</span>, and distributed systems on Kubernetes.</p>
+            </div>
+
+            <img src="Dosa_image.jpeg" alt="dosa" class="dosa-decoration">
+
+            <div class="bottombar reveal">
+                <div class="author"><span class="name">Kunal Das</span> · Developer Advocate, CAST AI</div>
+                <div class="tag">Virtual · Infosys · 16.07.2026</div>
+            </div>
+        </section>
+
+        <!-- ====================================================================
+             SLIDE 2 — ABOUT ME
+             ==================================================================== -->
+        <section class="slide slide-about" data-slide="2">
+            <!-- Speaker notes: Quick intro. I'm Kunal, Developer Advocate at CAST AI where we work
+                 on Kubernetes cost optimization and automation. I run a couple of cloud-native
+                 community groups in Kolkata and Mumbai. I spend most of my time at conferences,
+                 community events, and helping teams figure out how to run Kubernetes without burning
+                 money or losing sleep. Based in Bengaluru, originally from Kolkata. Now let's get into it. -->
+            <div class="terminal-grid"></div>
+
+            <div class="topbar reveal">
+                <div class="prompt">$ <span class="typed">whoami</span><span class="cursor"></span></div>
+                <div class="counter"><span class="now">02</span><span class="sep">/</span>25</div>
+            </div>
+
+            <div class="about-grid">
+                <div class="left-col reveal-left">
+                    <h2>Kunal <span class="accent">Das</span></h2>
+                    <div class="role">Developer Advocate, APAC — CAST AI</div>
+                    <p class="bio">
+                        I work on <span class="hl">Kubernetes cost optimization</span> and automation at CAST AI.
+                        I run cloud-native community groups — <span class="hl">Cloud Native Kolkata</span> (founder) and
+                        <span class="hl">Cloud Native Mumbai</span> (co-founder). I spend most of my time at
+                        conferences, community events, and helping teams run Kubernetes without burning money.
+                        Based in Bengaluru, originally from Kolkata.
+                    </p>
+                </div>
+                <div class="right-col">
+                    <div class="about-card reveal-scale">
+                        <div class="card-label">// Communities</div>
+                        <div class="card-content">
+                            Cloud Native Kolkata <span class="dim">(Founder)</span><br>
+                            Cloud Native Mumbai <span class="dim">(Co-founder)</span><br>
+                            CNCF Community Groups
+                        </div>
+                    </div>
+                    <div class="about-card reveal-scale">
+                        <div class="card-label">// Certification</div>
+                        <div class="card-content">
+                            <span class="chili">KCNA</span> — Kubernetes &amp; Cloud Native Associate
+                        </div>
+                    </div>
+                    <div class="about-card talks reveal-scale">
+                        <div class="card-label">// Recent Talks</div>
+                        <div class="card-content">
+                            <span class="pill">KubeCon India 2026</span>
+                            <span class="pill">FOSSASIA Bangkok</span>
+                            <span class="pill">ArgoCon Europe</span>
+                            <span class="pill">Observability Summit Minneapolis</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bottombar reveal">
+                <div class="author"><span class="name">Kunal Das</span> · Developer Advocate, CAST AI</div>
+                <div class="tag">About Me</div>
+            </div>
+        </section>
+
+        <!-- ====================================================================
+             SLIDE 3 — SETTING THE SCENE
+             ==================================================================== -->
+        <section class="slide slide-scene" data-slide="3">
+            <!-- Speaker notes: Before we get into any tech, let me ask you something. How many of you
+                 have been to Rameshwaram Cafe? If you're in Bangalore, drop a yes in the chat. If you're
+                 not in Bangalore, just imagine the most popular restaurant in your city. One that always
+                 has a crazy line outside. Rameshwaram Cafe is going to be our teacher tonight. Everything
+                 I explain about microservices, Kubernetes, deployment, observability, I'm going to explain
+                 through this one restaurant. By the end of this talk, you'll never look at a dosa the same
+                 way again. -->
+            <div class="terminal-grid"></div>
+            <div class="turmeric-glow"></div>
+
+            <div class="topbar reveal">
+                <div class="prompt">$ <span class="typed">cat scene-setup.md</span><span class="cursor"></span></div>
+                <div class="counter"><span class="now">03</span><span class="sep">/</span>25</div>
+            </div>
+
+            <div class="scene-content">
+                <img src="rameshwaram-cafe.png" alt="Rameshwaram Cafe" class="slide-img" style="max-width:600px;max-height:280px;margin:0 auto 32px;display:block;border-radius:16px;">
+                <div class="scene-kicker reveal">before we talk microservices...</div>
+                <h2 class="reveal-blur">
+                    Let's talk <span class="hl">dosas.</span>
+                </h2>
+                <p class="scene-sub reveal">
+                    Rameshwaram Cafe is our teacher tonight. <br>
+                    Everything about microservices, K8s, deployment, observability — <br>
+                    explained through <span style="color:var(--saffron)">one restaurant.</span>
+                </p>
+                <div class="queue-visual reveal-scale">
+                    <div class="person"></div>
+                    <div class="person"></div>
+                    <div class="person"></div>
+                    <div class="person"></div>
+                    <div class="person"></div>
+                    <div class="cafe"></div>
+                </div>
+            </div>
+
+            <div class="bottombar reveal">
+                <div class="author"><span class="name">Kunal Das</span> · Developer Advocate, CAST AI</div>
+                <div class="tag">Setting the Scene</div>
+            </div>
+        </section>
+
+        <!-- ====================================================================
+             SLIDE 4 — WHAT IS A MONOLITH?
+             ==================================================================== -->
+        <section class="slide slide-monolith" data-slide="4">
+            <!-- Speaker notes: Let's start from the very beginning. Forget microservices for a moment.
+                 When Rameshwaram Cafe started, it was one outlet. One kitchen. The same team handled
+                 everything: taking orders, cooking, billing, serving, cleaning. Everything happened in
+                 one place, managed by one group of people. In software, this is called a monolith. One
+                 big application that does everything. Your user login, your payment processing, your
+                 order management, your notifications, all living in one codebase, deployed as one unit.
+                 And here's the thing that people forget: monoliths are not bad. When you're small, a
+                 monolith is actually perfect. It's simple. Easy to understand. Easy to deploy. One kitchen,
+                 one team, everyone knows what's happening. Most of your college projects, your first apps
+                 at work, they're monoliths. And that's fine. The problem starts when you grow. -->
+            <div class="terminal-grid"></div>
+
+            <div class="topbar reveal">
+                <div class="prompt">$ <span class="typed">cat monolith.yaml</span><span class="cursor"></span></div>
+                <div class="counter"><span class="now">04</span><span class="sep">/</span>25</div>
+            </div>
+
+            <div class="mono-header">
+                <h2 class="reveal">The <span class="gold">One-Kitchen</span> Restaurant</h2>
+            </div>
+
+            <div class="mono-body">
+                <div class="kitchen-diagram reveal-scale">
+                    <img src="rameshwaram-chef.jpg" alt="Chef cooking" class="chef-image reveal-scale" style="margin-bottom:16px;">
+                    <div class="kitchen-box">
+                        <div class="kitchen-title">// one kitchen</div>
+                        <div class="kitchen-items">
+                            <span class="kitchen-tag"><span class="icon">🍳</span>cooking</span>
+                            <span class="kitchen-tag"><span class="icon">🧾</span>billing</span>
+                            <span class="kitchen-tag"><span class="icon">🍽️</span>serving</span>
+                            <span class="kitchen-tag"><span class="icon">📝</span>orders</span>
+                            <span class="kitchen-tag"><span class="icon">🧹</span>cleanup</span>
+                        </div>
+                    </div>
+                    <div class="kitchen-label">This is a monolith.</div>
+                </div>
+                <div class="mono-explain reveal-left">
+                    One big application that does <span class="hl">everything</span>. User login, payment
+                    processing, order management, notifications — all in one codebase, deployed as one unit.<br><br>
+                    <span class="chili">Monoliths are not bad.</span> When you're small, a monolith is perfect.
+                    Simple. Easy to understand. Easy to deploy.
+                    <div class="mono-examples">
+                        <span class="ex-tag">Early-stage startups</span>
+                        <span class="ex-tag">College projects</span>
+                        <span class="ex-tag">Your first production app</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bottombar reveal">
+                <div class="author"><span class="name">Kunal Das</span> · Developer Advocate, CAST AI</div>
+                <div class="tag">What is a Monolith?</div>
+            </div>
+        </section>
+
+        <!-- ====================================================================
+             SLIDE 5 — WHEN THE MONOLITH BREAKS
+             ==================================================================== -->
+        <section class="slide slide-breaks" data-slide="5">
+            <!-- Speaker notes: Rameshwaram Cafe is a hit. The line is out the door. 45-minute wait.
+                 And now the problems start. One cook falls sick and the whole kitchen slows down. You want
+                 to add a new item to the menu but you can't change the cooking station without also
+                 disrupting the billing counter. And if the billing system crashes, nobody can eat even
+                 though the food is ready. This is exactly what happens with monolith software at scale.
+                 One bug in the payment module crashes the entire app. You want to scale your search feature
+                 because it's getting heavy traffic, but you can't scale just search. You have to scale the
+                 entire application. And every time you deploy a small fix to one feature, you're
+                 redeploying everything, running all the tests, praying nothing else broke. Has anyone here
+                 experienced this? Where one small change needed a full deployment? Drop it in the chat. -->
+            <div class="terminal-grid"></div>
+
+            <div class="topbar reveal">
+                <div class="prompt">$ <span class="typed">kubectl describe monolith --status=breaking</span><span class="cursor"></span></div>
+                <div class="counter"><span class="now">05</span><span class="sep">/</span>25</div>
+            </div>
+
+            <div class="breaks-header">
+                <h2 class="reveal">But then the line gets <span class="chili">too long...</span></h2>
+            </div>
+
+            <div class="breaks-grid">
+                <div class="breaks-card reveal-scale">
+                    <div class="breaks-icon">⚠️</div>
+                    <div class="breaks-title">One failure = everything goes down</div>
+                    <div class="breaks-desc">One cook falls sick, whole kitchen slows. One bug in payment crashes the entire app.</div>
+                    <div class="breaks-tag">single point of failure</div>
+                </div>
+                <div class="breaks-card reveal-scale">
+                    <div class="breaks-icon">📈</div>
+                    <div class="breaks-title">Can't scale just the busy part</div>
+                    <div class="breaks-desc">Want more dosa capacity? You scale the entire kitchen. Want to scale search? You scale the whole app.</div>
+                    <div class="breaks-tag">all or nothing</div>
+                </div>
+                <div class="breaks-card reveal-scale">
+                    <div class="breaks-icon">🔄</div>
+                    <div class="breaks-title">One small change = redeploy everything</div>
+                    <div class="breaks-desc">Fix one feature, redeploy the entire app. Run all tests. Pray nothing else broke.</div>
+                    <div class="breaks-tag">45-min deploys</div>
+                </div>
+            </div>
+
+            <div class="breaks-warning reveal">
+                The problem starts <span class="chili">when you grow.</span>
+            </div>
+
+            <div class="bottombar reveal">
+                <div class="author"><span class="name">Kunal Das</span> · Developer Advocate, CAST AI</div>
+                <div class="tag">When the Monolith Breaks</div>
+            </div>
+        </section>
+
+        <!-- ====================================================================
+             SLIDE 6 — WHAT ARE MICROSERVICES?
+             ==================================================================== -->
+        <section class="slide slide-microservices" data-slide="6">
+            <!-- Speaker notes: So what's the solution? You redesign the kitchen. Instead of one big
+                 kitchen doing everything, you create separate stations. The dosa station only makes dosas.
+                 The idli station only makes idlis. Billing is its own counter. Token distribution is
+                 separate. Each station has its own team, its own equipment, its own process. If the idli
+                 station is overwhelmed, you add one more idli steamer. You don't rebuild the whole kitchen.
+                 If the dosa cook calls in sick, idlis are still flowing. This is microservices. Instead of
+                 one big application, you break it into small, independent services. Each service does one
+                 thing. Each service can be built, deployed, and scaled independently by its own team. The
+                 order service handles orders. The payment service handles payments. The notification service
+                 sends emails and texts. They talk to each other through well-defined interfaces, like the
+                 token number system at Rameshwaram. You get a token, the kitchen reads the token, food
+                 arrives at your table. -->
+            <div class="terminal-grid"></div>
+
+            <div class="topbar reveal">
+                <div class="prompt">$ <span class="typed">kubectl get svc --selector type=microservice</span><span class="cursor"></span></div>
+                <div class="counter"><span class="now">06</span><span class="sep">/</span>25</div>
+            </div>
+
+            <div class="ms-header">
+                <h2 class="reveal">The <span class="gold">Multi-Station</span> Kitchen</h2>
+            </div>
+
+            <div class="ms-body">
+                <div class="stations-diagram reveal-scale">
+                    <img src="rameshwaram-counter.jpeg" alt="Cafe counter" class="counter-image reveal-scale" style="margin-bottom:16px;">
+                    <div class="station-box">
+                        <div class="station-icon">🥞</div>
+                        <div class="station-name">Dosa Station</div>
+                        <div class="station-team">own team</div>
+                    </div>
+                    <div class="station-box">
+                        <div class="station-icon">🍚</div>
+                        <div class="station-name">Idli Station</div>
+                        <div class="station-team">own team</div>
+                    </div>
+                    <div class="station-box">
+                        <div class="station-icon">🧾</div>
+                        <div class="station-name">Billing Counter</div>
+                        <div class="station-team">own team</div>
+                    </div>
+                    <div class="station-box">
+                        <div class="station-icon">🎫</div>
+                        <div class="station-name">Token Counter</div>
+                        <div class="station-team">own team</div>
+                    </div>
+                </div>
+                <div class="ms-explain reveal-left">
+                    Break the app into <span class="gold">small, independent services.</span>
+                    Each does one thing. Each can be built, deployed, and scaled independently.<br><br>
+                    If the idli station is overwhelmed → <span class="hl">add one more steamer</span>.
+                    You don't rebuild the whole kitchen. If the dosa cook is sick, idlis still flow.<br><br>
+                    Services talk through <span class="hl">well-defined interfaces</span> — like the token
+                    number system. You get a token, the kitchen reads it, food arrives.
+                    <div class="ms-label">This is microservices.</div>
+                </div>
+            </div>
+
+            <div class="bottombar reveal">
+                <div class="author"><span class="name">Kunal Das</span> · Developer Advocate, CAST AI</div>
+                <div class="tag">What Are Microservices?</div>
+            </div>
+        </section>
+
+        <!-- ====================================================================
+             SLIDE 7 — MONOLITH vs MICROSERVICES COMPARISON
+             ==================================================================== -->
+        <section class="slide slide-compare" data-slide="7">
+            <!-- Speaker notes: Here's the honest comparison. And I want to be real with you because
+                 a lot of talks make it sound like monoliths are bad and microservices are the future.
+                 That's not true. Monoliths are simpler to start with. One codebase, one deployment. If your
+                 team is 5 people building a new product, a monolith is probably the right choice. Don't
+                 overcomplicate it. Microservices give you independence and scalability, but they come with
+                 real complexity. More things to deploy, more things to monitor, more things that can fail
+                 in weird ways. The decision should be based on your team size and your actual problem. Not
+                 on what looks cool on an architecture diagram. Which brings us to the trap. -->
+            <div class="terminal-grid"></div>
+
+            <div class="topbar reveal">
+                <div class="prompt">$ <span class="typed">diff monolith microservices</span><span class="cursor"></span></div>
+                <div class="counter"><span class="now">07</span><span class="sep">/</span>25</div>
+            </div>
+
+            <div class="compare-header">
+                <h2 class="reveal"><span class="gold">Monolith</span> vs Microservices</h2>
+            </div>
+
+            <div class="compare-grid">
+                <div class="compare-col monolith reveal-left">
+                    <div class="col-label">// Monolith</div>
+                    <div class="col-name">One Kitchen</div>
+                    <div class="col-points">
+                        <span class="pro">✓</span> One codebase, one deployment<br>
+                        <span class="pro">✓</span> Simple to start with<br>
+                        <span class="con">✗</span> Hard to scale specific parts<br>
+                        <span class="con">✗</span> One failure = <span class="hl">full outage</span>
+                    </div>
+                </div>
+                <div class="compare-col micro reveal-left">
+                    <div class="col-label">// Microservices</div>
+                    <div class="col-name">Multi-Station</div>
+                    <div class="col-points">
+                        <span class="pro">✓</span> Independent deployments<br>
+                        <span class="pro">✓</span> Scale specific parts easily<br>
+                        <span class="con">✗</span> Complex to set up<br>
+                        <span class="con">✗</span> One failure = <span class="hl">partial impact</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="compare-bottom reveal">
+                <div class="cb-text">Neither is universally better. It depends on your <span class="gold">team size</span> and <span class="gold">problem.</span></div>
+            </div>
+
+            <div class="bottombar reveal">
+                <div class="author"><span class="name">Kunal Das</span> · Developer Advocate, CAST AI</div>
+                <div class="tag">Monolith vs Microservices</div>
+            </div>
+        </section>
+
+        <!-- ====================================================================
+             SLIDE 8 — THE ONE-LINER
+             ==================================================================== -->
+        <section class="slide slide-oneliner" data-slide="8">
+            <!-- Speaker notes: I want you to screenshot this slide. This is the single most important
+                 line of the entire talk. Microservices don't solve complexity. They redistribute it.
+                 You're not removing problems. You're moving them from one place to many places. The
+                 question is whether that distribution is intentional and manageable, or chaotic.
+                 Everything we discuss from here is about making sure the redistribution is smart. -->
+            <div class="terminal-grid"></div>
+            <div class="turmeric-glow"></div>
+
+            <div class="topbar reveal">
+                <div class="prompt">$ <span class="typed">echo $CORE_INSIGHT</span><span class="cursor"></span></div>
+                <div class="counter"><span class="now">08</span><span class="sep">/</span>25</div>
+            </div>
+
+            <div class="oneliner-content">
+                <div class="ol-kicker reveal">// the one line that matters</div>
+                <h2 class="reveal-blur">
+                    Microservices don't solve <span class="red">complexity.</span><br>
+                    They <span class="gold">redistribute</span> it.
+                </h2>
+                <p class="ol-sub reveal">Choose wisely <span class="hl">what</span> you redistribute.</p>
+                <div class="screenshot-hint reveal">📷 screenshot this</div>
+            </div>
+
+            <div class="bottombar reveal">
+                <div class="author"><span class="name">Kunal Das</span> · Developer Advocate, CAST AI</div>
+                <div class="tag">The One-Liner</div>
+            </div>
+        </section>
+
+        <!-- ====================================================================
+             SLIDE 9 — SECTION TITLE: THE MICROSERVICES TRAP
+             ==================================================================== -->
+        <section class="slide slide-section" data-slide="9">
+            <!-- Speaker notes: Let's start with where things go wrong. Because most microservices
+                 stories don't begin with careful design. They begin with someone reading a Netflix
+                 engineering blog and saying "we should do that too." -->
+            <div class="terminal-grid"></div>
+            <div class="section-num">01</div>
+
+            <div class="topbar reveal">
+                <div class="prompt">$ <span class="typed">cd /part-1/the-microservices-trap</span><span class="cursor"></span></div>
+                <div class="counter"><span class="now">09</span><span class="sep">/</span>25</div>
+            </div>
+
+            <div class="section-content">
+                <div class="part-label reveal"><span class="chili-dot"></span>Part 01</div>
+                <h2 class="reveal-blur">The <span class="gold">Microservices</span> Trap</h2>
+                <p class="section-sub reveal">When the <span class="hl">cure</span> is worse than the disease.</p>
+            </div>
+
+            <div class="bottombar reveal">
+                <div class="author"><span class="name">Kunal Das</span> · Developer Advocate, CAST AI</div>
+                <div class="tag">Part 1 of 4</div>
+            </div>
+        </section>
+
+        <!-- ====================================================================
+             SLIDE 10 — LET'S POLL!
+             ==================================================================== -->
+        <section class="slide slide-poll" data-slide="10">
+            <!-- Speaker notes: Quick poll time. Switch to Mentimeter or scan the QR. How many
+                 microservices does your current project have? No judgment. "I don't know" and
+                 "still a monolith" are valid answers. I'll give you 30 seconds. (Wait for results.)
+                 Netflix has 2000 engineers running 700+ microservices. If your team has 12 people
+                 and 40 services, each person owns 3+ services. That's distributed anxiety.
+                 The Bangalore analogy: it's like BMTC deciding every bus route needs its own depot,
+                 its own maintenance crew, its own ticketing system. -->
+            <div class="terminal-grid"></div>
+            <div class="turmeric-glow"></div>
+
+            <div class="topbar reveal">
+                <div class="prompt">$ <span class="typed">kubectl get svc --all-namespaces | wc -l</span><span class="cursor"></span></div>
+                <div class="counter"><span class="now">10</span><span class="sep">/</span>25</div>
+            </div>
+
+            <div class="poll-grid">
+                <div class="qr-box reveal-scale">
+                    <div class="qr-placeholder" style="border:2px dashed var(--turmeric);display:flex;align-items:center;justify-content:center">
+                        <div class="qr-text" style="color:var(--turmeric);font-size:16px;text-align:center">
+                            📊 Switch to<br>Mentimeter<br><br><span style="font-size:12px;color:var(--cream-dim)">menti.com/code<br>or link in chat</span>
+                        </div>
+                    </div>
+                    <div class="qr-label">Mentimeter<span class="url">link in chat</span></div>
+                </div>
+                <div class="poll-content">
+                    <div style="font-family:var(--font-mono);font-size:18px;color:var(--chili);text-transform:uppercase;letter-spacing:0.14em;margin-bottom:12px" class="reveal">// 30 seconds — be honest</div>
+                    <h2 class="reveal" style="font-size:64px;line-height:1.05;margin-bottom:8px">Let's <span style="color:var(--turmeric)">Poll!</span></h2>
+                    <div class="poll-q reveal">How many microservices does your project have?</div>
+                    <div class="poll-options">
+                        <div class="poll-option reveal-left">
+                            <span class="opt-num">A.</span>
+                            <span class="opt-text">1–5 <span class="dim">— sensible</span></span>
+                        </div>
+                        <div class="poll-option reveal-left">
+                            <span class="opt-num">B.</span>
+                            <span class="opt-text">5–20 <span class="dim">— growing</span></span>
+                        </div>
+                        <div class="poll-option reveal-left">
+                            <span class="opt-num">C.</span>
+                            <span class="opt-text">20–50 <span class="dim">— ambitious</span></span>
+                        </div>
+                        <div class="poll-option reveal-left">
+                            <span class="opt-num">D.</span>
+                            <span class="opt-text">I don't know</span>
+                        </div>
+                        <div class="poll-option green-opt reveal-left">
+                            <span class="opt-num">E.</span>
+                            <span class="opt-text">We're still a monolith <span class="dim">(no shame)</span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bottombar reveal">
+                <div class="author"><span class="name">Kunal Das</span> · Developer Advocate, CAST AI</div>
+                <div class="tag">Let's Poll</div>
+            </div>
+        </section>
+
+        <!-- ====================================================================
+             SLIDE 11 — ANTI-PATTERN 1: NANO-SERVICES
+             ==================================================================== -->
+        <section class="slide slide-antipatterns" data-slide="11">
+            <!-- Speaker notes: Nano-services. You broke things so small that ordering one dosa requires
+                 the token counter to call the kitchen, which calls the spice station, which calls the ghee
+                 station, which calls the tawa station. Six network calls for one dosa. Every call is a
+                 potential failure point. You traded one problem for six. -->
+            <div class="terminal-grid"></div>
+
+            <div class="topbar reveal">
+                <div class="prompt">$ <span class="typed">kubectl get antipatterns --warn</span><span class="cursor"></span></div>
+                <div class="counter"><span class="now">11</span><span class="sep">/</span>25</div>
+            </div>
+
+            <div class="ap-header">
+                <h2 class="reveal">Trap 01: <span class="gold">Nano-Services</span></h2>
+                <div class="ap-sub reveal">// you broke it so small that one dosa = 6 network calls</div>
+            </div>
+
+            <div style="position:relative;z-index:1;padding:20px 96px 0" class="reveal-scale">
+                <div class="nano-chain">
+                    <div class="nano-node">🎫 Token<br>Counter</div>
+                    <span class="nano-arrow">→</span>
+                    <div class="nano-node">🍳 Kitchen</div>
+                    <span class="nano-arrow">→</span>
+                    <div class="nano-node">🌶️ Spice<br>Station</div>
+                    <span class="nano-arrow">→</span>
+                    <div class="nano-node">🫕 Ghee<br>Station</div>
+                    <span class="nano-arrow">→</span>
+                    <div class="nano-node">🔥 Tawa<br>Station</div>
+                    <span class="nano-arrow">→</span>
+                    <div class="nano-node">🍽️ Serve</div>
+                </div>
+                <div style="text-align:center;margin-top:32px">
+                    <div style="font-family:var(--font-display);font-weight:900;font-size:96px;color:var(--chili);line-height:1">6×</div>
+                    <div style="font-family:var(--font-mono);font-size:22px;color:var(--cream-dim);margin-top:12px">network calls for a single dosa. Every call is a <span style="color:var(--chili);font-weight:700">potential failure.</span></div>
+                </div>
+            </div>
+
+            <div class="ap-takeaway reveal" style="margin-top:auto;margin-bottom:80px">
+                <div class="tk-label">// the fix</div>
+                <div class="tk-text">Don't break things so small that a single request crosses <span class="gold">6 network boundaries.</span> You traded one problem for six.</div>
+            </div>
+
+            <div class="bottombar reveal">
+                <div class="author"><span class="name">Kunal Das</span> · Developer Advocate, CAST AI</div>
+                <div class="tag">Anti-Pattern 1/3</div>
+            </div>
+        </section>
+
+        <!-- ====================================================================
+             SLIDE 12 — ANTI-PATTERN 2: DISTRIBUTED MONOLITH
+             ==================================================================== -->
+        <section class="slide slide-antipatterns" data-slide="12">
+            <!-- Speaker notes: Distributed monolith. You have 30 services but they all deploy together
+                 because they're so tightly coupled. If the billing service is down, somehow the dosa
+                 station also stops. You got the worst of both worlds: the complexity of microservices
+                 with none of the independence. -->
+            <div class="terminal-grid"></div>
+
+            <div class="topbar reveal">
+                <div class="prompt">$ <span class="typed">kubectl get deploy --status=coupled</span><span class="cursor"></span></div>
+                <div class="counter"><span class="now">12</span><span class="sep">/</span>25</div>
+            </div>
+
+            <div class="ap-header">
+                <h2 class="reveal">Trap 02: <span class="gold">Distributed Monolith</span></h2>
+                <div class="ap-sub reveal">// 30 services that all deploy together anyway</div>
+            </div>
+
+            <div style="position:relative;z-index:1;padding:20px 96px 0" class="reveal-scale">
+                <div style="font-family:var(--font-mono);font-size:18px;color:var(--cream-dim);text-align:center;margin-bottom:16px">One service goes down → they ALL go down:</div>
+                <div class="cascade-grid">
+                    <div class="cascade-node down">🔒 Auth</div>
+                    <div class="cascade-node down">📦 Orders</div>
+                    <div class="cascade-node down">💳 Payment</div>
+                    <div class="cascade-node down">📧 Notify</div>
+                    <div class="cascade-node down">🔍 Search</div>
+                    <div class="cascade-node down">📊 Analytics</div>
+                    <div class="cascade-node down">👤 Users</div>
+                    <div class="cascade-node down">🛒 Cart</div>
+                    <div class="cascade-node down">📋 Inventory</div>
+                    <div class="cascade-node down">🚚 Shipping</div>
+                    <div class="cascade-node down">⭐ Reviews</div>
+                    <div class="cascade-node down">💬 Chat</div>
+                </div>
+                <div style="text-align:center;margin-top:32px">
+                    <div style="font-family:var(--font-display);font-weight:700;font-style:italic;font-size:32px;color:var(--cream)">Worst of <span style="color:var(--chili);font-weight:900">both worlds.</span></div>
+                    <div style="font-family:var(--font-mono);font-size:20px;color:var(--cream-dim);margin-top:12px">Complexity of microservices + <span style="color:var(--chili)">none of the independence.</span></div>
+                </div>
+            </div>
+
+            <div class="ap-takeaway reveal" style="margin-top:auto;margin-bottom:80px">
+                <div class="tk-label">// the fix</div>
+                <div class="tk-text">If billing is down and somehow the dosa station also stops → <span class="gold">you're not independent.</span> Decouple your services properly.</div>
+            </div>
+
+            <div class="bottombar reveal">
+                <div class="author"><span class="name">Kunal Das</span> · Developer Advocate, CAST AI</div>
+                <div class="tag">Anti-Pattern 2/3</div>
+            </div>
+        </section>
+
+        <!-- ====================================================================
+             SLIDE 13 — ANTI-PATTERN 3: RESUME-DRIVEN ARCHITECTURE
+             ==================================================================== -->
+        <section class="slide slide-antipatterns" data-slide="13">
+            <!-- Speaker notes: Resume-driven architecture. You picked Kafka, Istio, service mesh, and
+                 gRPC not because the problem needed it, but because it looks great on your LinkedIn
+                 profile. We've all been tempted. But your architecture should serve your users, not your
+                 resume. The CNCF landscape has 230+ projects. You don't need all of them. Pick what your
+                 problem needs. Simple rule: the right number of services equals the number your team can
+                 own, deploy, and debug at 2 AM without calling someone else. -->
+            <div class="terminal-grid"></div>
+
+            <div class="topbar reveal">
+                <div class="prompt">$ <span class="typed">kubectl get antipatterns --type=resume-driven</span><span class="cursor"></span></div>
+                <div class="counter"><span class="now">13</span><span class="sep">/</span>25</div>
+            </div>
+
+            <div class="ap-header">
+                <h2 class="reveal">Trap 03: <span class="gold">Resume-Driven</span> Architecture</h2>
+                <div class="ap-sub reveal">// picked for LinkedIn, not for the problem</div>
+            </div>
+
+            <div style="position:relative;z-index:1;padding:20px 96px 0" class="reveal-scale">
+                <div style="text-align:center;font-family:var(--font-mono);font-size:18px;color:var(--cream-dim);margin-bottom:8px">The CNCF landscape is overwhelming:</div>
+                <div class="cncf-stats">
+                    <div class="cncf-stat">
+                        <div class="stat-num">230+</div>
+                        <div class="stat-label">CNCF Projects</div>
+                    </div>
+                    <div class="cncf-stat">
+                        <div class="stat-num">300K+</div>
+                        <div class="stat-label">Contributors</div>
+                    </div>
+                    <div class="cncf-stat">
+                        <div class="stat-num">190+</div>
+                        <div class="stat-label">Countries</div>
+                    </div>
+                </div>
+                <div class="cncf-projects">
+                    <span class="cncf-pill">Kubernetes</span>
+                    <span class="cncf-pill">Prometheus</span>
+                    <span class="cncf-pill">Envoy</span>
+                    <span class="cncf-pill">Istio</span>
+                    <span class="cncf-pill">containerd</span>
+                    <span class="cncf-pill">Kafka</span>
+                    <span class="cncf-pill">gRPC</span>
+                    <span class="cncf-pill">Jaeger</span>
+                    <span class="cncf-pill">Helm</span>
+                    <span class="cncf-pill">Argo</span>
+                    <span class="cncf-pill">+ 220 more...</span>
+                </div>
+                <div style="text-align:center;margin-top:28px">
+                    <div style="font-family:var(--font-display);font-weight:700;font-style:italic;font-size:28px;color:var(--cream)">You don't need <span style="color:var(--chili);font-weight:900;font-style:normal">all 230.</span></div>
+                    <div style="font-family:var(--font-mono);font-size:20px;color:var(--saffron);margin-top:8px">Pick what your <span style="font-weight:700">problem</span> needs, not what your <span style="color:var(--chili);font-weight:700">LinkedIn</span> needs.</div>
+                </div>
+            </div>
+
+            <div class="ap-takeaway reveal" style="margin-top:auto;margin-bottom:80px">
+                <div class="tk-label">// the rule</div>
+                <div class="tk-text">Right number of services = what your team can <span class="gold">own, deploy, and debug at 2 AM</span></div>
+            </div>
+
+            <div class="bottombar reveal">
+                <div class="author"><span class="name">Kunal Das</span> · Developer Advocate, CAST AI</div>
+                <div class="tag">Anti-Pattern 3/3</div>
+            </div>
+        </section>
+
+        <!-- ====================================================================
+             SLIDE 14 — QUICK INTRO: WHAT IS KUBERNETES?
+             ==================================================================== -->
+        <section class="slide slide-k8s" data-slide="14">
+            <!-- Speaker notes: So now you have 12 independent kitchen stations. Who coordinates all of
+                 this? Who decides which station needs more staff during lunch rush? Who notices when a cook
+                 is sick and sends a replacement? Who makes sure the dosa station doesn't take up all the
+                 space meant for the idli station? That's Kubernetes. Think of it as the restaurant manager
+                 for your microservices. Kubernetes runs your services across many machines. If a service
+                 crashes, Kubernetes restarts it automatically. If traffic increases, it can spin up more
+                 copies. If traffic drops at night, it scales things down so you're not wasting resources.
+                 You tell Kubernetes "I want 3 copies of my order service running at all times" and it makes
+                 it happen. If one copy dies, Kubernetes notices and starts a new one. You don't get a 2 AM
+                 phone call for that. For the freshers here, you don't need to know every Kubernetes detail
+                 today. Just understand this: Kubernetes is the platform that makes running microservices
+                 manageable. Without something like it, managing 12 services across multiple servers would
+                 be a nightmare of manual work. -->
+            <div class="terminal-grid"></div>
+
+            <div class="topbar reveal">
+                <div class="prompt">$ <span class="typed">kubectl explain kubernetes --simple</span><span class="cursor"></span></div>
+                <div class="counter"><span class="now">14</span><span class="sep">/</span>25</div>
+            </div>
+
+            <div class="k8s-header">
+                <h2 class="reveal">But wait... who <span class="gold">manages</span> all these stations?</h2>
+            </div>
+
+            <div class="k8s-body">
+                <div class="k8s-visual reveal-scale">
+                    <img src="Kubernetes_logo_without_workmark.svg.webp" alt="Kubernetes logo" class="k8s-logo-img">
+                    <div class="manager-label">Kubernetes = the restaurant manager<br>for your microservices</div>
+                </div>
+                <div class="k8s-does reveal-left">
+                    <div class="does-label">// what it does</div>
+                    <div class="does-item"><span class="bullet">→</span> Runs your services across <span class="dim">many machines</span></div>
+                    <div class="does-item"><span class="bullet">→</span> Restarts them <span class="dim">if they crash</span></div>
+                    <div class="does-item"><span class="bullet">→</span> Scales up <span class="dim">when traffic increases</span></div>
+                    <div class="does-item"><span class="bullet">→</span> Scales down <span class="dim">when traffic drops</span></div>
+                    <div class="does-item" style="margin-top:12px;padding-top:16px;border-top:1px solid var(--border-soft);">
+                        <span class="bullet" style="color:var(--chili)">★</span> You say <span style="color:var(--saffron)">"I want 3 copies running"</span> — k8s makes it happen. No 2 AM phone calls.
+                    </div>
+                </div>
+            </div>
+
+            <div class="bottombar reveal">
+                <div class="author"><span class="name">Kunal Das</span> · Developer Advocate, CAST AI</div>
+                <div class="tag">What is Kubernetes?</div>
+            </div>
+        </section>
+
+        <!-- ====================================================================
+             SLIDE 13 — SECTION TITLE: DESIGNING SERVICES FOR KUBERNETES
+             ==================================================================== -->
+        <section class="slide slide-section" data-slide="15">
+            <!-- Speaker notes: OK so we know what microservices are, we know what can go wrong, we know
+                 Kubernetes is our manager. Now let's talk about how to design services the right way. -->
+            <div class="terminal-grid"></div>
+            <div class="section-num">02</div>
+
+            <div class="topbar reveal">
+                <div class="prompt">$ <span class="typed">cd /part-2/designing-services</span><span class="cursor"></span></div>
+                <div class="counter"><span class="now">15</span><span class="sep">/</span>25</div>
+            </div>
+
+            <div class="section-content">
+                <div class="part-label reveal"><span class="chili-dot"></span>Part 02</div>
+                <h2 class="reveal-blur">Designing Services<br>for <span class="gold">Kubernetes</span></h2>
+                <p class="section-sub reveal">Redesigning the <span class="hl">Rameshwaram kitchen</span> properly.</p>
+            </div>
+
+            <div class="bottombar reveal">
+                <div class="author"><span class="name">Kunal Das</span> · Developer Advocate, CAST AI</div>
+                <div class="tag">Part 2 of 4</div>
+            </div>
+        </section>
+
+        <!-- ====================================================================
+             SLIDE 14 — THREE DESIGN PRINCIPLES
+             ==================================================================== -->
+        <section class="slide slide-principles" data-slide="16">
+            <!-- Speaker notes: Three principles. Tattoo these in your brain for every service you design.
+                 One. One service, one job. At Rameshwaram, the dosa station doesn't also do billing. It
+                 makes dosas. That's it. In software, if your service needs a 30-line README just to explain
+                 what it does, it's doing too much. Split it. Two. Design for failure. In Bangalore, power
+                 cuts happen. Rameshwaram has a generator. Your services need the same thinking. Health
+                 checks that tell Kubernetes "I'm alive and ready." Graceful shutdown so when Kubernetes
+                 needs to restart you, you don't drop customer requests mid-way. My test: if you can't
+                 restart your service without a WhatsApp group discussion, it's not cloud-native. Three. Keep
+                 state out. Rameshwaram doesn't remember your face. You join the queue fresh every time with
+                 a new token. That's stateless design. Your service shouldn't depend on local memory or files
+                 on one specific machine. Keep data in a database, keep the service itself stateless. Why?
+                 Because Kubernetes might restart it on a completely different machine. If your service only
+                 works on "that one server," you've built that one auto driver who only goes via his route. -->
+            <div class="terminal-grid"></div>
+
+            <div class="topbar reveal">
+                <div class="prompt">$ <span class="typed">cat design-principles.yaml</span><span class="cursor"></span></div>
+                <div class="counter"><span class="now">16</span><span class="sep">/</span>25</div>
+            </div>
+
+            <div class="pr-header">
+                <h2 class="reveal">Three <span class="gold">Design Principles</span></h2>
+            </div>
+
+            <div class="pr-list">
+                <div class="pr-item reveal-left clickable" onclick="modal.open('principle-1')">
+                    <span class="click-hint">click to expand →</span>
+                    <div class="pr-num">01</div>
+                    <div class="pr-body">
+                        <div class="pr-title">One service, one job</div>
+                        <div class="pr-desc">A pod does one thing well. If your service needs a 30-line README to explain what it does — split it.</div>
+                    </div>
+                    <div class="pr-analogy">🍳 The dosa station doesn't do billing.</div>
+                </div>
+                <div class="pr-item reveal-left clickable" onclick="modal.open('principle-2')">
+                    <span class="click-hint">click to expand →</span>
+                    <div class="pr-num">02</div>
+                    <div class="pr-body">
+                        <div class="pr-title">Design for failure</div>
+                        <div class="pr-desc">Health checks, readiness probes, graceful shutdowns. If you can't restart without a WhatsApp group — it's not cloud-native.</div>
+                    </div>
+                    <div class="pr-analogy">⚡ Bangalore has power cuts. Rameshwaram has a generator.</div>
+                </div>
+                <div class="pr-item reveal-left clickable" onclick="modal.open('principle-3')">
+                    <span class="click-hint">click to expand →</span>
+                    <div class="pr-num">03</div>
+                    <div class="pr-body">
+                        <div class="pr-title">Keep state out</div>
+                        <div class="pr-desc">Stateless services scale beautifully. K8s might restart your pod on a different machine. Don't depend on local memory.</div>
+                    </div>
+                    <div class="pr-analogy">🎫 Rameshwaram doesn't remember your face. You queue fresh every time.</div>
+                </div>
+            </div>
+
+            <div class="bottombar reveal">
+                <div class="author"><span class="name">Kunal Das</span> · Developer Advocate, CAST AI</div>
+                <div class="tag">Design Principles</div>
+            </div>
+        </section>
+
+        <!-- ====================================================================
+             SLIDE 15 — SECTION TITLE: COMMUNICATION & DEPLOYMENT
+             ==================================================================== -->
+        <section class="slide slide-section" data-slide="17">
+            <!-- Speaker notes: Now the big question. You have 12 independent services. How do they talk
+                 to each other? Because they will need to. The order service needs to tell the payment
+                 service "hey, charge this customer." The payment service needs to tell the notification
+                 service "send a receipt." The way they communicate changes everything about your system's
+                 speed and reliability. And I have the perfect Bangalore analogy for this. -->
+            <div class="terminal-grid"></div>
+            <div class="section-num">03</div>
+
+            <div class="topbar reveal">
+                <div class="prompt">$ <span class="typed">cd /part-3/communicate-and-deploy</span><span class="cursor"></span></div>
+                <div class="counter"><span class="now">17</span><span class="sep">/</span>25</div>
+            </div>
+
+            <div class="section-content">
+                <div class="part-label reveal"><span class="chili-dot"></span>Part 03</div>
+                <h2 class="reveal-blur">Communication &amp;<br><span class="gold">Deployment</span></h2>
+                <p class="section-sub reveal"><span class="hl">Silk Board Junction</span> vs <span class="hl">NICE Road</span>.</p>
+            </div>
+
+            <div class="bottombar reveal">
+                <div class="author"><span class="name">Kunal Das</span> · Developer Advocate, CAST AI</div>
+                <div class="tag">Part 3 of 4</div>
+            </div>
+        </section>
+
+        <!-- ====================================================================
+             SLIDE 16 — COMMUNICATION PATTERNS
+             ==================================================================== -->
+        <section class="slide slide-comm" data-slide="18">
+            <!-- Speaker notes: Synchronous communication. Service A calls Service B and stands there
+                 waiting for a reply. Like being stuck at Silk Board at 6 PM. If the car ahead of you
+                 doesn't move, you don't move. If Service B is slow or down, Service A is stuck too.
+                 Fine for simple cases, "is this user logged in? yes or no," but dangerous when you chain
+                 5-6 services together. One slow service and the whole chain backs up. Asynchronous
+                 communication. Service A drops a message in a queue (think Kafka, RabbitMQ) and moves on
+                 with its life. Service B picks up the message whenever it's ready. That's NICE Road. You
+                 don't wait for the car ahead. Use this for anything that doesn't need an instant response.
+                 "Process this payment" can absolutely be async. Service mesh, tools like Istio or Linkerd.
+                 Think of it as a traffic police layer that sits between your services. It handles retries,
+                 timeouts, and routing rules at the infrastructure level so you don't have to code that into
+                 every single service. But here's my caution: don't add a service mesh when you have 5
+                 services. That's hiring 10 traffic police for a residential street in Jayanagar. -->
+            <div class="terminal-grid"></div>
+
+            <div class="topbar reveal">
+                <div class="prompt">$ <span class="typed">kubectl get comm-patterns</span><span class="cursor"></span></div>
+                <div class="counter"><span class="now">18</span><span class="sep">/</span>25</div>
+            </div>
+
+            <div class="comm-header">
+                <h2 class="reveal">How Services <span class="gold">Talk</span></h2>
+                <div class="comm-sub reveal">// Silk Board at 6 PM vs NICE Road</div>
+            </div>
+
+            <div class="flow-diagram reveal">
+                <div class="flow-lane sync">
+                    <div class="flow-lane-label">⛔ Sync (REST / gRPC) — Silk Board at 6 PM</div>
+                    <div class="flow-chain">
+                        <div class="flow-node">A</div>
+                        <div class="flow-arrow"><div class="flow-dot"></div></div>
+                        <div class="flow-node">B</div>
+                        <div class="flow-arrow"><div class="flow-dot"></div></div>
+                        <div class="flow-node">C</div>
+                    </div>
+                    <div style="font-family:var(--font-mono);font-size:15px;color:var(--chili);text-align:center">request stuck waiting at each hop</div>
+                </div>
+                <div class="flow-lane async">
+                    <div class="flow-lane-label">✅ Async (Events) — NICE Road</div>
+                    <div class="flow-chain">
+                        <div class="flow-node">A</div>
+                        <div class="flow-arrow"><div class="flow-dot"></div></div>
+                        <div class="flow-queue">Queue</div>
+                        <div class="flow-arrow"><div class="flow-dot"></div></div>
+                        <div class="flow-node">B</div>
+                    </div>
+                    <div style="font-family:var(--font-mono);font-size:15px;color:var(--turmeric);text-align:center">A drops message &amp; moves on — B picks it up when ready</div>
+                </div>
+            </div>
+
+            <div class="mesh-note reveal">
+                <div class="mesh-icon">🚦</div>
+                <div class="mesh-text">
+                    <span class="gold">Service Mesh</span> (Istio, Linkerd) = traffic police layer.
+                    Retries, timeouts, circuit breaking at the infrastructure level.
+                    <span class="chili">But don't add a mesh to 5 services</span> — that's 10 traffic cops for a Jayanagar residential street.
+                </div>
+            </div>
+
+            <div class="bottombar reveal">
+                <div class="author"><span class="name">Kunal Das</span> · Developer Advocate, CAST AI</div>
+                <div class="tag">Communication Patterns</div>
+            </div>
+        </section>
+
+        <!-- ====================================================================
+             SLIDE 17 — DEPLOYMENT STRATEGIES
+             ==================================================================== -->
+        <section class="slide slide-deploy" data-slide="19">
+            <!-- Speaker notes: How do you update your services without downtime? Three strategies.
+                 Blue-green. You run two complete versions of your service. The old one and the new one.
+                 When the new one is tested and ready, you switch all traffic to it instantly. If something
+                 breaks, switch back. Simple and safe, but expensive because you're running double.
+                 Canary. Named after the canary in a coal mine. You deploy the new version but only send 10%
+                 of traffic to it. Monitor closely. If everything's fine, increase to 25%, 50%, 100%. If
+                 something's wrong, you only affected 10% of users, not everyone. This is what I recommend
+                 for most teams starting out. Rolling. Kubernetes does this by default. It replaces old
+                 copies of your service with new ones, one at a time. The service never fully goes down.
+                 It's like replacing cooks one by one during a shift change. The kitchen keeps running.
+                 One golden rule: never yolo deploy to production at 5 PM on a Friday. We've all done it.
+                 Let's collectively stop. -->
+            <div class="terminal-grid"></div>
+
+            <div class="topbar reveal">
+                <div class="prompt">$ <span class="typed">kubectl rollout status deployment/dosa</span><span class="cursor"></span></div>
+                <div class="counter"><span class="now">19</span><span class="sep">/</span>25</div>
+            </div>
+
+            <div class="deploy-header">
+                <h2 class="reveal">Deployment <span class="gold">Strategies</span></h2>
+            </div>
+
+            <div class="deploy-grid">
+                <div class="deploy-card blue-green reveal-scale clickable" onclick="modal.open('deploy-bluegreen')">
+                    <span class="click-hint">click to expand →</span>
+                    <div class="deploy-icon">⬛⬜</div>
+                    <div class="deploy-name">Blue-Green</div>
+                    <div class="deploy-desc">Run two complete kitchens. Switch customers to the new one <span class="hl">instantly</span>. If something's wrong, switch back.</div>
+                    <div class="deploy-tag">clean but expensive</div>
+                </div>
+                <div class="deploy-card canary reveal-scale clickable" onclick="modal.open('deploy-canary')">
+                    <span class="click-hint">click to expand →</span>
+                    <div class="deploy-icon">10%</div>
+                    <div class="deploy-name">Canary</div>
+                    <div class="deploy-desc">Serve the new dosa recipe to <span class="hl">10% first</span>. If nobody complains, roll out to 25% → 50% → everyone.</div>
+                    <div class="deploy-tag">recommended for most teams</div>
+                </div>
+                <div class="deploy-card rolling reveal-scale clickable" onclick="modal.open('deploy-rolling')">
+                    <span class="click-hint">click to expand →</span>
+                    <div class="deploy-icon">🔄</div>
+                    <div class="deploy-name">Rolling</div>
+                    <div class="deploy-desc">Replace one cook at a time. The kitchen <span class="hl">never closes</span>. K8s default — gradually replacing old pods with new ones.</div>
+                    <div class="deploy-tag">k8s default</div>
+                </div>
+            </div>
+
+            <div class="deploy-rule reveal">
+                <div class="dr-text">Golden rule: never <span class="chili">yolo deploy</span> to production at 5 PM on a Friday.</div>
+            </div>
+
+            <div class="bottombar reveal">
+                <div class="author"><span class="name">Kunal Das</span> · Developer Advocate, CAST AI</div>
+                <div class="tag">Deployment Strategies</div>
+            </div>
+        </section>
+
+        <!-- ====================================================================
+             SLIDE 18 — SECTION TITLE: OBSERVABILITY & RESILIENCE
+             ==================================================================== -->
+        <section class="slide slide-section" data-slide="20">
+            <!-- Speaker notes: This is where most teams realize they should have invested earlier. And
+                 this section is important for freshers too because observability is a skill that separates
+                 good engineers from great ones. Let me paint a picture. 2 AM. Your phone buzzes. Alert:
+                 checkout service is down. You open the logs. Nothing useful. You check the dashboard. 12
+                 services, all showing green except one that says "degraded." Which one actually caused the
+                 problem? No idea. Welcome to microservices without observability. -->
+            <div class="terminal-grid"></div>
+            <div class="section-num">04</div>
+
+            <div class="topbar reveal">
+                <div class="prompt">$ <span class="typed">cd /part-4/observe-and-resilience</span><span class="cursor"></span></div>
+                <div class="counter"><span class="now">20</span><span class="sep">/</span>25</div>
+            </div>
+
+            <div class="section-content">
+                <div class="part-label reveal"><span class="chili-dot"></span>Part 04</div>
+                <h2 class="reveal-blur">Observability<br>&amp; <span class="gold">Resilience</span></h2>
+                <p class="section-sub reveal">It's <span class="hl">2 AM</span>. PagerDuty fires. Now what?</p>
+            </div>
+
+            <div class="bottombar reveal">
+                <div class="author"><span class="name">Kunal Das</span> · Developer Advocate, CAST AI</div>
+                <div class="tag">Part 4 of 4</div>
+            </div>
+        </section>
+
+        <!-- ====================================================================
+             SLIDE 19 — THREE PILLARS OF OBSERVABILITY
+             ==================================================================== -->
+        <section class="slide slide-obs" data-slide="21">
+            <!-- Speaker notes: Three pillars. Think of them as three different ways to understand what's
+                 happening inside your system. Logs are the order slips. They record what happened.
+                 "Customer X placed order at 10:15. Payment processed. Dosa dispatched." Factual, detailed,
+                 per-event records. Every service writes logs. Metrics are the daily sales board on the
+                 wall. Not individual orders, but the big picture. How many requests per second? What's the
+                 average response time? How much CPU is this service using? Metrics tell you the health of
+                 the system at a glance. Traces are the most powerful and the most underused. Imagine you
+                 could follow one specific customer's token from the moment they get it at the counter,
+                 through the kitchen, to the table. That's a trace. It follows one request as it travels
+                 through all your microservices, showing you exactly where time was spent and where things
+                 broke. You need all three working together. Logs without traces is like having CCTV in the
+                 kitchen but not the dining hall. You see the food being made but you can't tell if the
+                 right customer got it. For freshers, if you learn one tool from this talk, learn
+                 OpenTelemetry. It's the industry standard for instrumenting your services. Vendor-neutral,
+                 widely adopted, and it'll be relevant for the next decade of your career. -->
+            <div class="terminal-grid"></div>
+
+            <div class="topbar reveal">
+                <div class="prompt">$ <span class="typed">kubectl trace --pillars=all</span><span class="cursor"></span></div>
+                <div class="counter"><span class="now">21</span><span class="sep">/</span>25</div>
+            </div>
+
+            <div class="obs-header">
+                <h2 class="reveal">Three Pillars of <span class="gold">Observability</span></h2>
+            </div>
+
+            <div class="obs-terminals reveal" data-on-show="startTerminalSim">
+                <div class="obs-terminal">
+                    <div class="obs-terminal-header">
+                        <div class="obs-terminal-dot r"></div>
+                        <div class="obs-terminal-dot y"></div>
+                        <div class="obs-terminal-dot g"></div>
+                        <span class="obs-terminal-title">📋 logs</span>
+                    </div>
+                    <div class="obs-terminal-body" id="termLogs"><span style="color:var(--ash)">$ tail -f app.log</span></div>
+                </div>
+                <div class="obs-terminal">
+                    <div class="obs-terminal-header">
+                        <div class="obs-terminal-dot r"></div>
+                        <div class="obs-terminal-dot y"></div>
+                        <div class="obs-terminal-dot g"></div>
+                        <span class="obs-terminal-title">📊 metrics</span>
+                    </div>
+                    <div class="obs-terminal-body" id="termMetrics"><span style="color:var(--ash)">$ watch metrics</span></div>
+                </div>
+                <div class="obs-terminal">
+                    <div class="obs-terminal-header">
+                        <div class="obs-terminal-dot r"></div>
+                        <div class="obs-terminal-dot y"></div>
+                        <div class="obs-terminal-dot g"></div>
+                        <span class="obs-terminal-title">🔍 traces</span>
+                    </div>
+                    <div class="obs-terminal-body" id="termTraces"><span style="color:var(--ash)">$ jaeger trace</span></div>
+                </div>
+            </div>
+
+            <div class="obs-takeaway reveal">
+                <div class="tk-icon">⚠</div>
+                <div class="tk-text">Logs without traces = <span class="chili">CCTV in the kitchen but not the dining hall.</span> You need all three.</div>
+            </div>
+
+            <div class="obs-tools reveal">
+                <div class="tools-label">// tools:</div>
+                <div class="tool-pill">OpenTelemetry</div>
+                <div class="tool-pill">Grafana</div>
+                <div class="tool-pill">Jaeger</div>
+            </div>
+
+            <div class="bottombar reveal">
+                <div class="author"><span class="name">Kunal Das</span> · Developer Advocate, CAST AI</div>
+                <div class="tag">Observability</div>
+            </div>
+        </section>
+
+        <!-- ====================================================================
+             SLIDE 20 — RESILIENCE PATTERNS
+             ==================================================================== -->
+        <section class="slide slide-resilience" data-slide="22">
+            <!-- Speaker notes: Three resilience patterns. These protect your system when things go wrong,
+                 and things will go wrong. Circuit breakers. If the benne dosa counter is overwhelmed, you
+                 stop routing new tokens to it. Let it recover. If you keep sending orders to a struggling
+                 station, you'll create a 90-minute wait for everyone. In software, if a downstream service
+                 fails 5 times in a row, stop calling it for 30 seconds. Give it breathing room. Check
+                 again later. Rate limiting. Only 5 people at the counter at a time. The rest wait in an
+                 orderly line outside. This protects your service from traffic spikes. Without rate
+                 limiting, a sudden surge of users can crash everything. Retries with exponential backoff.
+                 UPI payment failed? Wait 2 seconds and try again. Then 4 seconds. Then 8 seconds. Don't
+                 spam it 50 times per second, that just makes the problem worse for everyone including the
+                 payment service that's already struggling. The key message: build these patterns in from
+                 day one. Not after your first production outage teaches you the hard way. -->
+            <div class="terminal-grid"></div>
+
+            <div class="topbar reveal">
+                <div class="prompt">$ <span class="typed">kubectl apply -f resilience.yaml</span><span class="cursor"></span></div>
+                <div class="counter"><span class="now">22</span><span class="sep">/</span>25</div>
+            </div>
+
+            <div class="res-header">
+                <h2 class="reveal">Resilience <span class="gold">Patterns</span></h2>
+            </div>
+
+            <div class="res-list">
+                <div class="res-item reveal-left clickable" onclick="modal.open('res-circuit')">
+                    <span class="click-hint">click to expand →</span>
+                    <div class="res-left">
+                        <div class="res-name">Circuit Breaker</div>
+                        <div class="res-tag">// stop the bleed</div>
+                    </div>
+                    <div class="res-desc">
+                        Benne dosa counter overwhelmed? <span class="chili">Stop sending tokens there.</span> Let it recover.
+                        If a downstream service fails 5× in a row, stop calling it for 30 seconds. <span class="dim">Let it breathe.</span>
+                    </div>
+                </div>
+                <div class="res-item reveal-left clickable" onclick="modal.open('res-ratelimit')">
+                    <span class="click-hint">click to expand →</span>
+                    <div class="res-left">
+                        <div class="res-name">Rate Limiting</div>
+                        <div class="res-tag">// protect the counter</div>
+                    </div>
+                    <div class="res-desc">
+                        Only <span class="saffron">5 people at the counter</span>. The rest wait in line.
+                        Protect your services from sudden traffic spikes.
+                    </div>
+                </div>
+                <div class="res-item reveal-left clickable" onclick="modal.open('res-retry')">
+                    <span class="click-hint">click to expand →</span>
+                    <div class="res-left">
+                        <div class="res-name">Retries + Backoff</div>
+                        <div class="res-tag">// don't spam</div>
+                    </div>
+                    <div class="res-desc">
+                        UPI failed? Wait <span class="saffron">2s → 4s → 8s</span>. Don't spam it 50 times per second.
+                        <span class="dim">That just makes things worse for everyone.</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="res-bottom reveal">
+                <div class="rb-text">Build these in from <span class="chili">day one.</span> Not after the first outage.</div>
+            </div>
+
+            <div class="bottombar reveal">
+                <div class="author"><span class="name">Kunal Das</span> · Developer Advocate, CAST AI</div>
+                <div class="tag">Resilience Patterns</div>
+            </div>
+        </section>
+
+        <!-- ====================================================================
+             SLIDE 21 — THE REAL STORY (CASE STUDY)
+             ==================================================================== -->
+        <section class="slide slide-case" data-slide="23">
+            <!-- Speaker notes: Let me tell you a real story. A team had a monolith. 45-minute deploy
+                 cycles. One bad deploy on a Thursday evening took down the entire platform. Everyone was
+                 paged. It took 3 hours to recover. So they decided to do the microservices migration.
+                 Broke the monolith into 12 services on Kubernetes. Month one was actually worse. Deploy
+                 times went up because they didn't have CI/CD set up per service. Debugging was harder
+                 because logs were scattered across 12 services with no way to connect them. Some people
+                 on the team said let's just go back. But then they did three things. One, set up namespace
+                 isolation and resource limits in Kubernetes. Each service got its own space and couldn't
+                 eat another service's memory. Think of it as each Rameshwaram station getting its own gas
+                 burner, not sharing one. Two, added OpenTelemetry for distributed tracing. Now they could
+                 follow a request end to end and pinpoint exactly where it was slow or broken. Three,
+                 implemented canary deployments. No more shipping directly to 100% of users and praying.
+                 Six months later: deploys took 4 minutes, zero full-outage incidents, team shipped
+                 features twice a week. The punchline: the win wasn't microservices. The win was doing
+                 microservices with discipline, on a platform that helps enforce that discipline. -->
+            <div class="terminal-grid"></div>
+
+            <div class="topbar reveal">
+                <div class="prompt">$ <span class="typed">git log --oneline case-study.md</span><span class="cursor"></span></div>
+                <div class="counter"><span class="now">23</span><span class="sep">/</span>25</div>
+            </div>
+
+            <div class="case-header">
+                <div class="case-label reveal">// a real story</div>
+                <h2 class="reveal">The Real <span style="color:var(--turmeric)">Story</span></h2>
+            </div>
+
+            <div class="case-timeline">
+                <div class="case-step before reveal-scale">
+                    <div class="step-num">BEFORE</div>
+                    <div class="step-label">// monolith</div>
+                    <div class="step-title">45-min deploys<br>one bad deploy = full outage</div>
+                    <div class="step-desc">Entire platform goes down on a Thursday evening. 3 hours to recover.</div>
+                </div>
+                <div class="case-step move reveal-scale">
+                    <div class="step-num">THE MOVE</div>
+                    <div class="step-label">// migration</div>
+                    <div class="step-title">Broke into 12 services on Kubernetes</div>
+                    <div class="step-desc">The microservices migration begins.</div>
+                </div>
+                <div class="case-step first-month reveal-scale">
+                    <div class="step-num">MONTH 1</div>
+                    <div class="step-label">// worse</div>
+                    <div class="step-title">Deploy times UP. Debugging harder.</div>
+                    <div class="step-desc">No CI/CD per service. Logs scattered. "Let's go back to the monolith."</div>
+                </div>
+                <div class="case-step after reveal-scale">
+                    <div class="step-num">6 MONTHS</div>
+                    <div class="step-label">// after</div>
+                    <div class="step-title">4-min deploys.<br>Zero full outages.<br>Ships 2×/week.</div>
+                    <div class="step-desc">The win wasn't microservices. It was <span class="hl">discipline on a platform that enforces it</span>.</div>
+                </div>
+            </div>
+
+            <div class="case-fixes reveal">
+                <div class="fix-label">// what fixed it</div>
+                <div class="fix-list">
+                    <span class="num">1.</span> Namespace isolation + resource limits<br>
+                    <span class="num">2.</span> Distributed tracing (OpenTelemetry)<br>
+                    <span class="num">3.</span> Canary deployments — no more push-and-pray
+                </div>
+            </div>
+
+            <div class="case-punchline reveal">
+                <div class="cp-text">The win wasn't microservices. It was <span class="gold">discipline.</span></div>
+            </div>
+
+            <div class="bottombar reveal">
+                <div class="author"><span class="name">Kunal Das</span> · Developer Advocate, CAST AI</div>
+                <div class="tag">Case Study</div>
+            </div>
+        </section>
+
+        <!-- ====================================================================
+             SLIDE 22 — KEY TAKEAWAYS
+             ==================================================================== -->
+        <section class="slide slide-takeaways" data-slide="24">
+            <!-- Speaker notes: Four things I want you to take away tonight, whether you're a fresher or
+                 a 10-year veteran. One. Monoliths aren't bad. If your team is small and your product is
+                 new, start with a monolith. Don't microservice your way into complexity you don't need
+                 yet. Two. If you do go microservices, the right number of services is what your team can
+                 own, deploy, and debug at 2 AM without calling 5 people. Three. Observability is not a
+                 "we'll add it later" thing. Logs, metrics, and traces from day one. You'll thank yourself
+                 the first time something breaks at midnight. And four. If your Rameshwaram Cafe is serving
+                 500 people fine from one kitchen, maybe you don't need 12 kitchens. Maybe you just need a
+                 faster tawa. -->
+            <div class="terminal-grid"></div>
+
+            <div class="topbar reveal">
+                <div class="prompt">$ <span class="typed">echo $TAKEAWAYS | sort --important</span><span class="cursor"></span></div>
+                <div class="counter"><span class="now">24</span><span class="sep">/</span>25</div>
+            </div>
+
+            <div class="tk-header">
+                <h2 class="reveal">Key <span class="gold">Takeaways</span></h2>
+            </div>
+
+            <div class="tk-grid">
+                <div class="tk-card reveal-scale">
+                    <div class="tk-num">01</div>
+                    <div class="tk-body"><span class="gold">Monoliths aren't bad.</span> Start there if you're small.</div>
+                </div>
+                <div class="tk-card reveal-scale">
+                    <div class="tk-num">02</div>
+                    <div class="tk-body">Right number of services = what your team can <span class="chili">own at 2 AM</span>.</div>
+                </div>
+                <div class="tk-card reveal-scale">
+                    <div class="tk-num">03</div>
+                    <div class="tk-body">Observability is <span class="gold">day one</span>, not "later."</div>
+                </div>
+                <div class="tk-card reveal-scale">
+                    <div class="tk-num">04</div>
+                    <div class="tk-body">Serving 500 fine from one kitchen? Maybe you just need a <span class="gold">faster tawa</span>.</div>
+                </div>
+            </div>
+
+            <div class="bottombar reveal">
+                <div class="author"><span class="name">Kunal Das</span> · Developer Advocate, CAST AI</div>
+                <div class="tag">Takeaways</div>
+            </div>
+        </section>
+
+        <!-- ====================================================================
+             SLIDE 23 — THANK YOU / Q&A
+             ==================================================================== -->
+        <section class="slide slide-thanks" data-slide="25">
+            <!-- Speaker notes: That's it from me. Thank you for spending your Wednesday evening here
+                 instead of scrolling through reels. I've put a QR code on screen and I'll drop the link in
+                 chat too. It goes to a resource page with everything I mentioned: OpenTelemetry docs, the
+                 Chris Richardson book, Kubernetes docs, and the 12-Factor App methodology which is great
+                 reading for freshers especially. Please connect with me on LinkedIn or Twitter. I write
+                 about Kubernetes, cloud-native, FinOps, and developer advocacy regularly. I also run
+                 community events in Bangalore, Kolkata, and Mumbai. If you're into the cloud-native
+                 space, come say hi. Now let's do Q&A. Drop your questions in the chat. No question is too
+                 basic, I mean it. If you're thinking it, ten other people are too but didn't type it.
+                 I'll hang around for as long as there are questions. -->
+            <div class="terminal-grid"></div>
+            <div class="turmeric-glow"></div>
+
+            <div class="topbar reveal">
+                <div class="prompt">$ <span class="typed">exit 0 — thank you!</span><span class="cursor"></span></div>
+                <div class="counter"><span class="now">25</span><span class="sep">/</span>25</div>
+            </div>
+
+            <div class="thanks-content">
+                <h2 class="reveal-blur">Thank <span class="gold">You!</span></h2>
+                <p class="thanks-sub reveal">Drop your <span class="chili">questions in the chat</span> — no question is too basic.</p>
+
+                <div class="contact-grid reveal">
+                    <div class="contact-card">
+                        <div class="ct-label">LinkedIn</div>
+                        <div class="ct-value">Kunal Das</div>
+                    </div>
+                    <div class="contact-card">
+                        <div class="ct-label">Twitter / X</div>
+                        <div class="ct-value">@intaborr</div>
+                    </div>
+                    <div class="contact-card">
+                        <div class="ct-label">Website</div>
+                        <div class="ct-value">kunaldas.net</div>
+                    </div>
+
+                </div>
+
+                <div style="display:flex;gap:32px;align-items:center;justify-content:center;margin-top:36px" class="reveal">
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://heylink.me/kunaldas/&color=232-163-23&bgcolor=20-18-16" alt="QR code" style="width:160px;height:160px;border-radius:12px;border:1px solid var(--border)">
+                    <div style="text-align:left">
+                        <div style="font-family:var(--font-mono);font-size:15px;color:var(--turmeric);text-transform:uppercase;letter-spacing:0.14em;margin-bottom:8px">// all links</div>
+                        <div style="font-family:var(--font-mono);font-size:22px;color:var(--cream);font-weight:700">heylink.me/kunaldas</div>
+                        <div style="font-family:var(--font-mono);font-size:16px;color:var(--cream-dim);margin-top:8px">Scan or click — all resources &amp; socials in one place</div>
+                    </div>
+                </div>
+
+                <div class="resources reveal">
+                    <div class="res-label">// resources</div>
+                    <div class="res-list">
+                        📖 <span class="hl">opentelemetry.io</span> — OpenTelemetry docs<br>
+                        📘 "Microservices Patterns" by <span class="hl">Chris Richardson</span><br>
+                        📋 Kubernetes docs — <span class="hl">kubernetes.io/docs</span><br>
+                        📝 12-Factor App — <span class="hl">12factor.net</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bottombar reveal">
+                <div class="author"><span class="name">Kunal Das</span> · Developer Advocate, CAST AI</div>
+                <div class="tag">Q&amp;A</div>
+            </div>
+        </section>
+
+    </main>
+</div>
+
+<!-- ===========================================
+     DECK CONTROLS (outside the stage)
+     =========================================== -->
+<div class="deck-controls">
+    <span id="slideCounter">01 / 25</span>
+    <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:4.0%"></div></div>
+    <span class="nav-hint">← → / Space</span>
+</div>
+
+<!-- ===========================================
+     MODAL OVERLAY — interactive popups
+     =========================================== -->
+<div class="modal-overlay" id="modalOverlay">
+    <div class="modal-backdrop" onclick="modal.close()"></div>
+    <div class="modal-container">
+        <button class="modal-close" onclick="modal.close()">✕</button>
+        <div id="modalContent"></div>
+    </div>
+</div>
+
+<!-- ===========================================
+     INLINE EDITING CONTROLS
+     =========================================== -->
+<div class="edit-hotzone"></div>
+<button class="edit-toggle" id="editToggle" title="Edit mode (E)">✏️ Edit</button>
+
+<!-- ===========================================
+     KIMCHI.DEV CREDIT PILL
+     =========================================== -->
+<a href="https://kimchi.dev" target="_blank" class="kimchi-pill">
+    <span class="kimchi-logo">▲</span>
+    <span class="kimchi-text">built with <span class="kw">kimchi.dev</span></span>
+</a>
+
+<script>
+/* ===========================================
+   SLIDE PRESENTATION CONTROLLER
+   Handles: keyboard nav, touch/swipe, mouse wheel,
+   stage scaling, progress bar, inline editing.
+   =========================================== */
+class SlidePresentation {
+    constructor() {
+        this.slides = document.querySelectorAll('.slide');
+        this.currentSlide = 0;
+        this.totalSlides = this.slides.length;
+        this.stage = document.getElementById('deckStage');
+        this.counter = document.getElementById('slideCounter');
+        this.progressFill = document.getElementById('progressFill');
+
+        this.setupStageScale();
+        this.setupKeyboardNav();
+        this.setupTouchNav();
+        this.setupWheelNav();
+        this.setupEditControls();
+        this.showSlide(0);
+    }
+
+    /* --- Stage Scaling: scale 1920×1080 stage uniformly to viewport --- */
+    setupStageScale() {
+        const scale = () => {
+            const factor = Math.min(
+                window.innerWidth / 1920,
+                window.innerHeight / 1080
+            );
+            const x = (window.innerWidth - 1920 * factor) / 2;
+            const y = (window.innerHeight - 1080 * factor) / 2;
+            this.stage.style.transform =
+                `translate(${x}px, ${y}px) scale(${factor})`;
+        };
+        scale();
+        window.addEventListener('resize', scale);
+    }
+
+    /* --- Keyboard: Arrow keys, Space, Page Up/Down, Home/End --- */
+    setupKeyboardNav() {
+        document.addEventListener('keydown', (e) => {
+            if (e.target.getAttribute('contenteditable') === 'true') {
+                if (e.key === 'Escape') e.target.blur();
+                return;
+            }
+            if ((e.key === 'e' || e.key === 'E') && !e.target.getAttribute('contenteditable')) {
+                return;
+            }
+            switch (e.key) {
+                case 'ArrowRight':
+                case ' ':
+                case 'PageDown':
+                    e.preventDefault();
+                    this.next();
+                    break;
+                case 'ArrowLeft':
+                case 'PageUp':
+                    e.preventDefault();
+                    this.prev();
+                    break;
+                case 'Home':
+                    e.preventDefault();
+                    this.showSlide(0);
+                    break;
+                case 'End':
+                    e.preventDefault();
+                    this.showSlide(this.totalSlides - 1);
+                    break;
+            }
+        });
+    }
+
+    /* --- Touch/Swipe: mobile navigation --- */
+    setupTouchNav() {
+        let startX = 0, startY = 0;
+        this.stage.addEventListener('touchstart', (e) => {
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+        }, { passive: true });
+        this.stage.addEventListener('touchend', (e) => {
+            const endX = e.changedTouches[0].clientX;
+            const endY = e.changedTouches[0].clientY;
+            const diffX = startX - endX;
+            const diffY = startY - endY;
+            if (Math.abs(diffX) > 50 && Math.abs(diffX) > Math.abs(diffY)) {
+                if (diffX > 0) this.next();
+                else this.prev();
+            }
+        }, { passive: true });
+    }
+
+    /* --- Mouse Wheel: navigate with scroll --- */
+    setupWheelNav() {
+        let wheelTimeout = null;
+        let wheelAccumulator = 0;
+        this.stage.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            wheelAccumulator += e.deltaY;
+            if (wheelTimeout) clearTimeout(wheelTimeout);
+            wheelTimeout = setTimeout(() => {
+                if (Math.abs(wheelAccumulator) > 30) {
+                    if (wheelAccumulator > 0) this.next();
+                    else this.prev();
+                    wheelAccumulator = 0;
+                }
+            }, 80);
+        }, { passive: false });
+    }
+
+    next() {
+        if (this.currentSlide < this.totalSlides - 1) this.showSlide(this.currentSlide + 1);
+    }
+
+    prev() {
+        if (this.currentSlide > 0) this.showSlide(this.currentSlide - 1);
+    }
+
+    showSlide(index) {
+        this.currentSlide = Math.max(0, Math.min(index, this.totalSlides - 1));
+        this.slides.forEach((slide, i) => {
+            slide.classList.toggle('active', i === this.currentSlide);
+            slide.classList.toggle('visible', i === this.currentSlide);
+        });
+        const pct = ((this.currentSlide + 1) / this.totalSlides) * 100;
+        this.progressFill.style.width = pct + '%';
+        const slideNum = String(this.currentSlide + 1).padStart(2, '0');
+        const totalNum = String(this.totalSlides).padStart(2, '0');
+        this.counter.textContent = `${slideNum} / ${totalNum}`;
+        // Fire data-on-show callback if present (e.g. terminal sim)
+        const activeSlide = this.slides[this.currentSlide];
+        const onShow = activeSlide && activeSlide.querySelector('[data-on-show]');
+        if (onShow) {
+            const fn = onShow.getAttribute('data-on-show');
+            if (typeof window[fn] === 'function') {
+                setTimeout(() => window[fn](), 600);
+            }
+        }
+    }
+
+    /* --- Inline Editing --- */
+    setupEditControls() {
+        const editor = new InlineEditor();
+        const editToggle = document.getElementById('editToggle');
+        const hotzone = document.querySelector('.edit-hotzone');
+        let hideTimeout = null;
+
+        editToggle.addEventListener('click', () => editor.toggleEditMode());
+
+        hotzone.addEventListener('mouseenter', () => {
+            clearTimeout(hideTimeout);
+            editToggle.classList.add('show');
+        });
+        hotzone.addEventListener('mouseleave', () => {
+            hideTimeout = setTimeout(() => {
+                if (!editor.isActive) editToggle.classList.remove('show');
+            }, 400);
+        });
+        editToggle.addEventListener('mouseenter', () => clearTimeout(hideTimeout));
+        editToggle.addEventListener('mouseleave', () => {
+            hideTimeout = setTimeout(() => {
+                if (!editor.isActive) editToggle.classList.remove('show');
+            }, 400);
+        });
+        hotzone.addEventListener('click', () => editor.toggleEditMode());
+
+        document.addEventListener('keydown', (e) => {
+            if ((e.key === 'e' || e.key === 'E') &&
+                !e.target.getAttribute('contenteditable')) {
+                e.preventDefault();
+                editor.toggleEditMode();
+            }
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                if (editor.isActive) {
+                    e.preventDefault();
+                    editor.save();
+                }
+            }
+        });
+    }
+}
+
+/* ===========================================
+   INLINE EDITOR
+   =========================================== */
+class InlineEditor {
+    constructor() {
+        this.isActive = false;
+        this.editToggle = document.getElementById('editToggle');
+        this.editableSelector = 'h1, h2, h3, p, span, div, .tk-body, .tk-text, .card-content, .opt-text, .lane-analogy, .res-desc, .step-title, .step-desc, .pr-title, .pr-desc, .pr-analogy, .ap-name, .ap-desc, .deploy-name, .deploy-desc, .obs-name, .obs-analogy, .obs-desc, .res-name, .ct-value, .res-list, .bio, .subtitle, .scene-sub, .ol-sub, .section-sub, .comm-sub, .ap-sub, .case-label, .mono-explain, .ms-explain, .col-points, .breaks-title, .breaks-desc, .does-item, .cb-text, .rb-text, .dr-text, .cp-text';
+        this.storageKey = 'tawa-terminal-deck-v2-edits';
+        this.loadSaved();
+    }
+
+    toggleEditMode() {
+        this.isActive = !this.isActive;
+        document.body.classList.toggle('edit-mode', this.isActive);
+        this.editToggle.classList.toggle('active', this.isActive);
+        if (this.isActive) this.enableEditing();
+        else this.disableEditing();
+    }
+
+    enableEditing() {
+        document.querySelectorAll(this.editableSelector).forEach(el => {
+            if (el.children.length === 0 || this.hasDirectText(el)) {
+                el.setAttribute('contenteditable', 'true');
+            }
+        });
+    }
+
+    hasDirectText(el) {
+        for (let node of el.childNodes) {
+            if (node.nodeType === Node.TEXT_NODE && node.textContent.trim()) return true;
+        }
+        return false;
+    }
+
+    disableEditing() {
+        document.querySelectorAll('[contenteditable="true"]').forEach(el => {
+            el.removeAttribute('contenteditable');
+        });
+        this.save();
+    }
+
+    save() {
+        const edits = {};
+        document.querySelectorAll('.slide').forEach((slide, i) => {
+            edits[`slide-${i}`] = slide.innerHTML;
+        });
+        try {
+            localStorage.setItem(this.storageKey, JSON.stringify(edits));
+            this.flashSaveIndicator();
+        } catch (e) {
+            console.warn('Could not save to localStorage:', e);
+        }
+    }
+
+    loadSaved() {
+        try {
+            const saved = localStorage.getItem(this.storageKey);
+            if (saved) {
+                const edits = JSON.parse(saved);
+                document.querySelectorAll('.slide').forEach((slide, i) => {
+                    if (edits[`slide-${i}`]) slide.innerHTML = edits[`slide-${i}`];
+                });
+            }
+        } catch (e) {
+            console.warn('Could not load saved edits:', e);
+        }
+    }
+
+    flashSaveIndicator() {
+        const indicator = document.createElement('div');
+        indicator.textContent = '✓ Saved';
+        indicator.style.cssText = `
+            position:fixed;top:60px;left:50%;transform:translateX(-50%);
+            font-family:'JetBrains Mono',monospace;font-size:14px;
+            color:var(--turmeric);background:rgba(20,18,16,0.9);
+            padding:8px 20px;border-radius:20px;border:1px solid var(--turmeric);
+            z-index:10002;transition:opacity 0.5s;
+        `;
+        document.body.appendChild(indicator);
+        setTimeout(() => {
+            indicator.style.opacity = '0';
+            setTimeout(() => indicator.remove(), 500);
+        }, 1200);
+    }
+}
+
+/* ===========================================
+   MODAL CONTROLLER
+   =========================================== */
+class ModalController {
+    constructor() {
+        this.overlay = document.getElementById('modalOverlay');
+        this.content = document.getElementById('modalContent');
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && this.overlay.classList.contains('active')) {
+                this.close();
+            }
+        });
+    }
+    open(modalId) {
+        const data = MODALS[modalId];
+        if (!data) return;
+        this.content.innerHTML = data.html;
+        this.overlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+    close() {
+        this.overlay.classList.remove('active');
+        document.body.style.overflow = '';
+        setTimeout(() => { this.content.innerHTML = ''; }, 400);
+    }
+}
+
+/* ===========================================
+   MODALS DATA — all interactive popup content
+   Each modal has: html (template string)
+   CSS animations trigger when modal-overlay gets .active
+   =========================================== */
+const MODALS = {
+    'principle-1': {
+        html: `<div class="modal-subtitle">// Design Principle 01</div>
+        <div class="modal-title">One Service, <span class="gold">One Job</span></div>
+        <div class="modal-body">
+            <div class="modal-diagram">
+                <div class="modal-split-box">
+                    <div class="modal-monolith-box">MONOLITH</div>
+                    <span style="font-size:32px;color:var(--turmeric)">→</span>
+                    <div class="modal-services-stack">
+                        <div class="modal-service-box">🔐 Auth Service</div>
+                        <div class="modal-service-box">📦 Order Service</div>
+                        <div class="modal-service-box">💳 Payment Service</div>
+                    </div>
+                </div>
+                <div class="modal-hint">Watch the monolith split into focused services</div>
+            </div>
+            <div class="modal-text">
+                The dosa station <span class="gold">only makes dosas.</span> It doesn't do billing.<br><br>
+                In Kubernetes, a pod does one thing well. If your service needs a <span class="hl">30-line README</span> just to explain what it does — split it.<br><br>
+                Each service gets its own team, its own deployment, its own scaling rules.
+            </div>
+        </div>`
+    },
+    'principle-2': {
+        html: `<div class="modal-subtitle">// Design Principle 02</div>
+        <div class="modal-title">Design for <span class="gold">Failure</span></div>
+        <div class="modal-body">
+            <div class="modal-diagram">
+                <div class="pod-lifecycle">
+                    <div class="pod-state">Running</div>
+                    <span class="pod-arrow">→</span>
+                    <div class="pod-state" style="animation-delay:1.5s">Crash!</div>
+                    <span class="pod-arrow">→</span>
+                    <div class="pod-state" style="animation-delay:3s">K8s<br>restarts</div>
+                </div>
+                <div class="modal-hint">K8s detects crashes and auto-restarts</div>
+            </div>
+            <div class="modal-text">
+                Bangalore has power cuts. Rameshwaram has a <span class="gold">generator.</span><br><br>
+                Your services need: <span class="hl">health checks</span>, <span class="hl">readiness probes</span>, <span class="hl">graceful shutdowns.</span><br><br>
+                My test: if you can't restart your service without a <span class="chili">WhatsApp group discussion</span> — it's not cloud-native.
+            </div>
+        </div>`
+    },
+    'principle-3': {
+        html: `<div class="modal-subtitle">// Design Principle 03</div>
+        <div class="modal-title">Keep <span class="gold">State</span> Out</div>
+        <div class="modal-body">
+            <div class="modal-diagram">
+                <div class="state-grid">
+                    <div class="state-col good">
+                        <div class="state-label">✓ Stateless</div>
+                        <div class="state-node">Pod on Node 1</div>
+                        <div style="color:var(--turmeric);font-family:var(--font-mono);font-size:14px">↓ K8s moves it</div>
+                        <div class="state-node">Pod on Node 2 ✓</div>
+                    </div>
+                    <div class="state-col bad">
+                        <div class="state-label">✗ Stateful</div>
+                        <div class="state-node">Pod stuck on Node 1</div>
+                        <div style="color:var(--chili);font-family:var(--font-mono);font-size:14px">✗ Can't move</div>
+                        <div class="state-node">Locked in place ✗</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-text">
+                Rameshwaram doesn't remember your face. You queue <span class="gold">fresh every time.</span><br><br>
+                Stateless services scale beautifully. K8s might restart your pod on a <span class="hl">completely different machine.</span><br><br>
+                If your service only works on "that one server" — you've built that one auto driver who <span class="chili">only goes via his route.</span>
+            </div>
+        </div>`
+    },
+    'deploy-bluegreen': {
+        html: `<div class="modal-subtitle">// Deployment Strategy</div>
+        <div class="modal-title"><span class="gold">Blue-Green</span> Deployment</div>
+        <div class="modal-body">
+            <div class="modal-diagram">
+                <div class="bg-envs">
+                    <div class="bg-env blue">
+                        <div class="bg-label">Blue (v1)</div>
+                        <div class="bg-dots"><div class="bg-dot"></div><div class="bg-dot"></div><div class="bg-dot"></div><div class="bg-dot"></div></div>
+                    </div>
+                    <span style="font-size:32px;color:var(--turmeric)">→</span>
+                    <div class="bg-env green">
+                        <div class="bg-label">Green (v2)</div>
+                        <div class="bg-dots"><div class="bg-dot"></div><div class="bg-dot"></div><div class="bg-dot"></div><div class="bg-dot"></div></div>
+                    </div>
+                </div>
+                <div class="modal-hint">Traffic moves from Blue to Green instantly</div>
+            </div>
+            <div class="modal-text">
+                Run two complete kitchens. When the new one is ready, switch <span class="gold">all customers over instantly.</span><br><br>
+                If something breaks, <span class="hl">switch back</span>. Clean and safe.<br><br>
+                But <span class="chili">expensive</span> — you're running double infrastructure.
+            </div>
+        </div>`
+    },
+    'deploy-canary': {
+        html: `<div class="modal-subtitle">// Deployment Strategy</div>
+        <div class="modal-title"><span class="gold">Canary</span> Deployment</div>
+        <div class="modal-body">
+            <div class="modal-diagram">
+                <div class="canary-gauge">
+                    <div class="canary-pct" id="canaryPct">10%</div>
+                    <div class="canary-bar-bg"><div class="canary-bar-fill"></div></div>
+                </div>
+                <div class="modal-hint">Watch traffic gradually shift to the new version</div>
+            </div>
+            <div class="modal-text">
+                Named after the <span class="gold">canary in a coal mine.</span><br><br>
+                Serve the new recipe to <span class="hl">10% first.</span> Monitor. If nobody complains, roll out to 25% → 50% → everyone.<br><br>
+                <span class="gold">Recommended</span> for most teams. Low risk, real production feedback.
+            </div>
+        </div>`
+    },
+    'deploy-rolling': {
+        html: `<div class="modal-subtitle">// Deployment Strategy</div>
+        <div class="modal-title"><span class="gold">Rolling</span> Update</div>
+        <div class="modal-body">
+            <div class="modal-diagram">
+                <div class="rolling-pods">
+                    <div class="rolling-pod">v1</div>
+                    <div class="rolling-pod">v1</div>
+                    <div class="rolling-pod">v1</div>
+                    <div class="rolling-pod">v1</div>
+                    <div class="rolling-pod">v1</div>
+                </div>
+                <div class="modal-hint">Pods update one at a time — kitchen never closes</div>
+            </div>
+            <div class="modal-text">
+                Kubernetes does this <span class="gold">by default.</span><br><br>
+                Replace one cook at a time. The kitchen <span class="hl">never closes.</span><br><br>
+                Gradually replacing old pods with new ones. No downtime, no double infrastructure.
+            </div>
+        </div>`
+    },
+    'res-circuit': {
+        html: `<div class="modal-subtitle">// Resilience Pattern</div>
+        <div class="modal-title"><span class="gold">Circuit Breaker</span></div>
+        <div class="modal-body">
+            <div class="modal-diagram">
+                <div class="cb-states">
+                    <div class="cb-state">Closed<br>(normal)</div>
+                    <div class="cb-state">Open<br>(blocked)</div>
+                    <div class="cb-state">Half-Open<br>(testing)</div>
+                </div>
+                <div class="modal-hint">Three states cycle: closed → open → half-open → closed</div>
+            </div>
+            <div class="modal-text">
+                Benne dosa counter overwhelmed? <span class="chili">Stop sending tokens there.</span> Let it recover.<br><br>
+                If a downstream service fails <span class="gold">5× in a row</span>, stop calling it for 30 seconds.<br><br>
+                Give it breathing room. Check again later.
+            </div>
+        </div>`
+    },
+    'res-ratelimit': {
+        html: `<div class="modal-subtitle">// Resilience Pattern</div>
+        <div class="modal-title"><span class="gold">Rate Limiting</span></div>
+        <div class="modal-body">
+            <div class="modal-diagram">
+                <div class="rl-bucket">
+                    <div class="rl-slots">
+                        <div class="rl-slot">1</div>
+                        <div class="rl-slot">2</div>
+                        <div class="rl-slot">3</div>
+                        <div class="rl-slot">4</div>
+                        <div class="rl-slot">5</div>
+                    </div>
+                    <div class="rl-queue">↓ request 6 waits in queue ↓</div>
+                </div>
+                <div class="modal-hint">5 slots fill, rest queue up</div>
+            </div>
+            <div class="modal-text">
+                Only <span class="gold">5 people at the counter</span> at a time. The rest wait in an orderly line.<br><br>
+                Protects your service from <span class="hl">sudden traffic spikes.</span><br><br>
+                Without rate limiting, a surge of users can <span class="chili">crash everything.</span>
+            </div>
+        </div>`
+    },
+    'res-retry': {
+        html: `<div class="modal-subtitle">// Resilience Pattern</div>
+        <div class="modal-title">Retries + <span class="gold">Backoff</span></div>
+        <div class="modal-body">
+            <div class="modal-diagram">
+                <div class="retry-timeline">
+                    <div class="retry-step"><span class="retry-time">0s</span><span class="retry-icon">❌</span><span class="retry-text">UPI failed</span></div>
+                    <div class="retry-step"><span class="retry-time">2s</span><span class="retry-icon">❌</span><span class="retry-text">retry failed</span></div>
+                    <div class="retry-step"><span class="retry-time">4s</span><span class="retry-icon">❌</span><span class="retry-text">retry failed</span></div>
+                    <div class="retry-step"><span class="retry-time">8s</span><span class="retry-icon">✅</span><span class="retry-text" style="color:var(--green)">success!</span></div>
+                </div>
+                <div class="modal-hint">Exponential backoff: 2s → 4s → 8s</div>
+            </div>
+            <div class="modal-text">
+                UPI payment failed? Wait <span class="gold">2 seconds</span>, try again. Then 4. Then 8.<br><br>
+                <span class="chili">Don't spam it 50 times per second.</span> That just makes things worse for everyone — including the payment service that's already struggling.<br><br>
+                Exponential backoff = polite retries.
+            </div>
+        </div>`
+    }
+};
+
+/* ===========================================
+   TERMINAL SIMULATION — Observability slide
+   Types out logs, metrics, and traces with cursor
+   =========================================== */
+function startTerminalSim() {
+    const terminals = {
+        logs: [
+            { text: '[10:15:03] POST /api/orders - 201', cls: 'log-line' },
+            { text: '[10:15:03] order #4821 created', cls: 'log-line' },
+            { text: '[10:15:04] POST /api/payments - 200', cls: 'log-line' },
+            { text: '[10:15:04] UPI txn=8x2k confirmed', cls: 'log-line' },
+            { text: '[10:15:05] GET /api/menu - 200 12ms', cls: 'log-line' },
+            { text: '[10:15:06] order #4821 dispatched', cls: 'log-line' },
+            { text: '[10:15:07] GET /api/orders/4821 - 200', cls: 'log-line' },
+            { text: '[10:15:08] benne dosa served ✓', cls: 'log-line' }
+        ],
+        metrics: [
+            { text: '--- LIVE METRICS ---', cls: 'metric-val' },
+            { text: 'req/sec:      1,247  ↑', cls: 'metric-val' },
+            { text: 'avg latency:     42ms ↓', cls: 'metric-val' },
+            { text: 'p99 latency:    128ms', cls: 'metric-val' },
+            { text: 'error rate:     0.3%', cls: 'metric-val' },
+            { text: 'CPU:            67%', cls: 'metric-val' },
+            { text: 'Memory:        812MB', cls: 'metric-val' },
+            { text: 'active pods:       6', cls: 'metric-val' },
+            { text: 'STATUS: HEALTHY  ✓', cls: 'metric-val' }
+        ],
+        traces: [
+            { text: 'GET /api/menu', cls: 'trace-arrow' },
+            { text: '├─ auth.check      3ms', cls: 'trace-arrow' },
+            { text: '├─ cache.lookup    1ms', cls: 'trace-arrow' },
+            { text: '├─ menu.fetch     12ms', cls: 'trace-arrow' },
+            { text: '├─ price.calc      2ms', cls: 'trace-arrow' },
+            { text: '└─ response        2ms', cls: 'trace-arrow' },
+            { text: '', cls: '' },
+            { text: 'Total: 20ms  ✓', cls: 'trace-ok' }
+        ]
+    };
+    const targetIds = ['termLogs', 'termMetrics', 'termTraces'];
+    const keys = ['logs', 'metrics', 'traces'];
+    let completed = 0;
+    keys.forEach((key, idx) => {
+        const el = document.getElementById(targetIds[idx]);
+        if (!el || el.dataset.typed === '1') return;
+        el.dataset.typed = '1';
+        el.innerHTML = '';
+        const lines = terminals[key];
+        let li = 0;
+        function typeLine() {
+            if (li >= lines.length) {
+                el.innerHTML += '<span class="cursor-blink"></span>';
+                completed++;
+                return;
+            }
+            const line = lines[li];
+            const span = document.createElement('span');
+            span.className = line.cls;
+            span.textContent = line.text + '\n';
+            el.appendChild(span);
+            li++;
+            setTimeout(typeLine, 180 + Math.random() * 120);
+        }
+        setTimeout(typeLine, 200 + idx * 400);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    window.modal = new ModalController();
+    new SlidePresentation();
+});
+</script>
+</body>
+</html>
