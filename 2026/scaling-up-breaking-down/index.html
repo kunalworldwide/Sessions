@@ -1515,18 +1515,42 @@ img,video,canvas,svg{max-width:100%;max-height:100%}
    =========================================== */
 .kimchi-pill{
     position:fixed;bottom:18px;right:24px;z-index:999;
-    display:flex;align-items:center;gap:8px;
-    font-family:var(--font-mono);font-size:12px;color:var(--cream-dim);
-    background:rgba(20,18,16,0.85);padding:6px 16px;border-radius:20px;
-    border:1px solid var(--border-soft);backdrop-filter:blur(8px);
-    text-decoration:none;transition:color .2s,border-color .2s;
+    display:flex;align-items:center;gap:10px;
+    text-decoration:none;
+    background:linear-gradient(135deg,rgba(29,26,22,0.92),rgba(20,18,16,0.92));
+    padding:7px 18px 7px 12px;border-radius:24px;
+    border:1px solid var(--border-soft);
+    backdrop-filter:blur(10px);
+    box-shadow:0 4px 20px rgba(0,0,0,0.3);
+    transition:all .25s var(--ease-out-expo);
 }
-.kimchi-pill:hover{color:var(--turmeric);border-color:var(--turmeric)}
-.kimchi-pill .kimchi-logo{
-    font-weight:800;color:var(--turmeric);font-size:13px;
+.kimchi-pill:hover{
+    border-color:var(--turmeric);
+    box-shadow:0 4px 24px rgba(232,163,23,0.2);
+    transform:translateY(-1px);
 }
-.kimchi-pill .kimchi-text{font-size:11px;color:var(--ash)}
-.kimchi-pill .kimchi-text .kw{color:var(--cream-dim)}
+.kimchi-pill .kimchi-mark{
+    width:22px;height:22px;
+    border-radius:6px;
+    background:linear-gradient(135deg,var(--turmeric),var(--chili));
+    display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;
+    box-shadow:0 0 12px rgba(232,163,23,0.3);
+}
+.kimchi-pill .kimchi-mark svg{
+    width:13px;height:13px;
+}
+.kimchi-pill .kimchi-label{
+    font-family:var(--font-mono);font-size:11px;
+    color:var(--ash);letter-spacing:0.02em;
+    line-height:1;
+}
+.kimchi-pill .kimchi-label .kw{
+    color:var(--cream);font-weight:700;
+}
+.kimchi-pill .kimchi-label .dot{
+    color:var(--turmeric);font-weight:700;
+}
 
 /* ===========================================
    INLINE EDITING (included by default)
@@ -1683,7 +1707,7 @@ body.edit-mode::after{
             </div>
 
             <div class="scene-content">
-                <img src="rameshwaram-cafe.png" alt="Rameshwaram Cafe" class="slide-img" style="max-width:600px;max-height:280px;margin:0 auto 32px;display:block;border-radius:16px;">
+                <img src="rameshwaram%20cafe_image.png" alt="Rameshwaram Cafe" class="slide-img" style="max-width:600px;max-height:280px;margin:0 auto 32px;display:block;border-radius:16px;">
                 <div class="scene-kicker reveal">before we talk microservices...</div>
                 <h2 class="reveal-blur">
                     Let's talk <span class="hl">dosas.</span>
@@ -1736,7 +1760,7 @@ body.edit-mode::after{
 
             <div class="mono-body">
                 <div class="kitchen-diagram reveal-scale">
-                    <img src="rameshwaram-chef.jpg" alt="Chef cooking" class="chef-image reveal-scale" style="margin-bottom:16px;">
+                    <img src="rameshwaram%20cafe%20kitchen%20chef%20cooking.jpg" alt="Chef cooking" class="chef-image reveal-scale" style="margin-bottom:16px;">
                     <div class="kitchen-box">
                         <div class="kitchen-title">// one kitchen</div>
                         <div class="kitchen-items">
@@ -1853,7 +1877,7 @@ body.edit-mode::after{
 
             <div class="ms-body">
                 <div class="stations-diagram reveal-scale">
-                    <img src="rameshwaram-counter.jpeg" alt="Cafe counter" class="counter-image reveal-scale" style="margin-bottom:16px;">
+                    <img src="rameshwaram%20cafe%20counter.jpeg" alt="Cafe counter" class="counter-image reveal-scale" style="margin-bottom:16px;">
                     <div class="station-box">
                         <div class="station-icon">🥞</div>
                         <div class="station-name">Dosa Station</div>
@@ -2951,8 +2975,14 @@ body.edit-mode::after{
      KIMCHI.DEV CREDIT PILL
      =========================================== -->
 <a href="https://kimchi.dev" target="_blank" class="kimchi-pill">
-    <span class="kimchi-logo">▲</span>
-    <span class="kimchi-text">built with <span class="kw">kimchi.dev</span></span>
+    <span class="kimchi-mark">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="#141210" opacity="0.9"/>
+            <path d="M2 17L12 22L22 17" stroke="#141210" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M2 12L12 17L22 12" stroke="#141210" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+        </svg>
+    </span>
+    <span class="kimchi-label">built with <span class="kw">kimchi<span class="dot">.</span>dev</span></span>
 </a>
 
 <script>
