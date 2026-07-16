@@ -1606,7 +1606,7 @@ body.edit-mode::after{
 
             <div class="topbar reveal">
                 <div class="prompt">$ <span class="typed">kubectl get talks --field-selector theme=microservices</span><span class="cursor"></span></div>
-                <div class="counter"><span class="now">01</span><span class="sep">/</span>25</div>
+                <div class="counter"><span class="now">01</span><span class="sep">/</span>24</div>
             </div>
 
             <div class="hero">
@@ -1639,7 +1639,7 @@ body.edit-mode::after{
 
             <div class="topbar reveal">
                 <div class="prompt">$ <span class="typed">whoami</span><span class="cursor"></span></div>
-                <div class="counter"><span class="now">02</span><span class="sep">/</span>25</div>
+                <div class="counter"><span class="now">02</span><span class="sep">/</span>24</div>
             </div>
 
             <div class="about-grid">
@@ -1703,7 +1703,7 @@ body.edit-mode::after{
 
             <div class="topbar reveal">
                 <div class="prompt">$ <span class="typed">cat scene-setup.md</span><span class="cursor"></span></div>
-                <div class="counter"><span class="now">03</span><span class="sep">/</span>25</div>
+                <div class="counter"><span class="now">03</span><span class="sep">/</span>24</div>
             </div>
 
             <div class="scene-content">
@@ -1751,7 +1751,7 @@ body.edit-mode::after{
 
             <div class="topbar reveal">
                 <div class="prompt">$ <span class="typed">cat monolith.yaml</span><span class="cursor"></span></div>
-                <div class="counter"><span class="now">04</span><span class="sep">/</span>25</div>
+                <div class="counter"><span class="now">04</span><span class="sep">/</span>24</div>
             </div>
 
             <div class="mono-header">
@@ -1810,7 +1810,7 @@ body.edit-mode::after{
 
             <div class="topbar reveal">
                 <div class="prompt">$ <span class="typed">kubectl describe monolith --status=breaking</span><span class="cursor"></span></div>
-                <div class="counter"><span class="now">05</span><span class="sep">/</span>25</div>
+                <div class="counter"><span class="now">05</span><span class="sep">/</span>24</div>
             </div>
 
             <div class="breaks-header">
@@ -1868,7 +1868,7 @@ body.edit-mode::after{
 
             <div class="topbar reveal">
                 <div class="prompt">$ <span class="typed">kubectl get svc --selector type=microservice</span><span class="cursor"></span></div>
-                <div class="counter"><span class="now">06</span><span class="sep">/</span>25</div>
+                <div class="counter"><span class="now">06</span><span class="sep">/</span>24</div>
             </div>
 
             <div class="ms-header">
@@ -1932,7 +1932,7 @@ body.edit-mode::after{
 
             <div class="topbar reveal">
                 <div class="prompt">$ <span class="typed">diff monolith microservices</span><span class="cursor"></span></div>
-                <div class="counter"><span class="now">07</span><span class="sep">/</span>25</div>
+                <div class="counter"><span class="now">07</span><span class="sep">/</span>24</div>
             </div>
 
             <div class="compare-header">
@@ -1986,7 +1986,7 @@ body.edit-mode::after{
 
             <div class="topbar reveal">
                 <div class="prompt">$ <span class="typed">echo $CORE_INSIGHT</span><span class="cursor"></span></div>
-                <div class="counter"><span class="now">08</span><span class="sep">/</span>25</div>
+                <div class="counter"><span class="now">08</span><span class="sep">/</span>24</div>
             </div>
 
             <div class="oneliner-content">
@@ -2017,7 +2017,7 @@ body.edit-mode::after{
 
             <div class="topbar reveal">
                 <div class="prompt">$ <span class="typed">cd /part-1/the-microservices-trap</span><span class="cursor"></span></div>
-                <div class="counter"><span class="now">09</span><span class="sep">/</span>25</div>
+                <div class="counter"><span class="now">09</span><span class="sep">/</span>24</div>
             </div>
 
             <div class="section-content">
@@ -2033,72 +2033,9 @@ body.edit-mode::after{
         </section>
 
         <!-- ====================================================================
-             SLIDE 10 — LET'S POLL!
+             SLIDE 10 — ANTI-PATTERN 1: NANO-SERVICES
              ==================================================================== -->
-        <section class="slide slide-poll" data-slide="10">
-            <!-- Speaker notes: Quick poll time. Switch to Mentimeter or scan the QR. How many
-                 microservices does your current project have? No judgment. "I don't know" and
-                 "still a monolith" are valid answers. I'll give you 30 seconds. (Wait for results.)
-                 Netflix has 2000 engineers running 700+ microservices. If your team has 12 people
-                 and 40 services, each person owns 3+ services. That's distributed anxiety.
-                 The Bangalore analogy: it's like BMTC deciding every bus route needs its own depot,
-                 its own maintenance crew, its own ticketing system. -->
-            <div class="terminal-grid"></div>
-            <div class="turmeric-glow"></div>
-
-            <div class="topbar reveal">
-                <div class="prompt">$ <span class="typed">kubectl get svc --all-namespaces | wc -l</span><span class="cursor"></span></div>
-                <div class="counter"><span class="now">10</span><span class="sep">/</span>25</div>
-            </div>
-
-            <div class="poll-grid">
-                <div class="qr-box reveal-scale">
-                    <div class="qr-placeholder" style="border:2px dashed var(--turmeric);display:flex;align-items:center;justify-content:center">
-                        <div class="qr-text" style="color:var(--turmeric);font-size:16px;text-align:center">
-                            📊 Switch to<br>Mentimeter<br><br><span style="font-size:12px;color:var(--cream-dim)">menti.com/code<br>or link in chat</span>
-                        </div>
-                    </div>
-                    <div class="qr-label">Mentimeter<span class="url">link in chat</span></div>
-                </div>
-                <div class="poll-content">
-                    <div style="font-family:var(--font-mono);font-size:18px;color:var(--chili);text-transform:uppercase;letter-spacing:0.14em;margin-bottom:12px" class="reveal">// 30 seconds — be honest</div>
-                    <h2 class="reveal" style="font-size:64px;line-height:1.05;margin-bottom:8px">Let's <span style="color:var(--turmeric)">Poll!</span></h2>
-                    <div class="poll-q reveal">How many microservices does your project have?</div>
-                    <div class="poll-options">
-                        <div class="poll-option reveal-left">
-                            <span class="opt-num">A.</span>
-                            <span class="opt-text">1–5 <span class="dim">— sensible</span></span>
-                        </div>
-                        <div class="poll-option reveal-left">
-                            <span class="opt-num">B.</span>
-                            <span class="opt-text">5–20 <span class="dim">— growing</span></span>
-                        </div>
-                        <div class="poll-option reveal-left">
-                            <span class="opt-num">C.</span>
-                            <span class="opt-text">20–50 <span class="dim">— ambitious</span></span>
-                        </div>
-                        <div class="poll-option reveal-left">
-                            <span class="opt-num">D.</span>
-                            <span class="opt-text">I don't know</span>
-                        </div>
-                        <div class="poll-option green-opt reveal-left">
-                            <span class="opt-num">E.</span>
-                            <span class="opt-text">We're still a monolith <span class="dim">(no shame)</span></span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bottombar reveal">
-                <div class="author"><span class="name">Kunal Das</span> · Developer Advocate, CAST AI</div>
-                <div class="tag">Let's Poll</div>
-            </div>
-        </section>
-
-        <!-- ====================================================================
-             SLIDE 11 — ANTI-PATTERN 1: NANO-SERVICES
-             ==================================================================== -->
-        <section class="slide slide-antipatterns" data-slide="11">
+        <section class="slide slide-antipatterns" data-slide="10">
             <!-- Speaker notes: Nano-services. You broke things so small that ordering one dosa requires
                  the token counter to call the kitchen, which calls the spice station, which calls the ghee
                  station, which calls the tawa station. Six network calls for one dosa. Every call is a
@@ -2107,7 +2044,7 @@ body.edit-mode::after{
 
             <div class="topbar reveal">
                 <div class="prompt">$ <span class="typed">kubectl get antipatterns --warn</span><span class="cursor"></span></div>
-                <div class="counter"><span class="now">11</span><span class="sep">/</span>25</div>
+                <div class="counter"><span class="now">10</span><span class="sep">/</span>24</div>
             </div>
 
             <div class="ap-header">
@@ -2149,7 +2086,7 @@ body.edit-mode::after{
         <!-- ====================================================================
              SLIDE 12 — ANTI-PATTERN 2: DISTRIBUTED MONOLITH
              ==================================================================== -->
-        <section class="slide slide-antipatterns" data-slide="12">
+        <section class="slide slide-antipatterns" data-slide="11">
             <!-- Speaker notes: Distributed monolith. You have 30 services but they all deploy together
                  because they're so tightly coupled. If the billing service is down, somehow the dosa
                  station also stops. You got the worst of both worlds: the complexity of microservices
@@ -2158,7 +2095,7 @@ body.edit-mode::after{
 
             <div class="topbar reveal">
                 <div class="prompt">$ <span class="typed">kubectl get deploy --status=coupled</span><span class="cursor"></span></div>
-                <div class="counter"><span class="now">12</span><span class="sep">/</span>25</div>
+                <div class="counter"><span class="now">11</span><span class="sep">/</span>24</div>
             </div>
 
             <div class="ap-header">
@@ -2202,7 +2139,7 @@ body.edit-mode::after{
         <!-- ====================================================================
              SLIDE 13 — ANTI-PATTERN 3: RESUME-DRIVEN ARCHITECTURE
              ==================================================================== -->
-        <section class="slide slide-antipatterns" data-slide="13">
+        <section class="slide slide-antipatterns" data-slide="12">
             <!-- Speaker notes: Resume-driven architecture. You picked Kafka, Istio, service mesh, and
                  gRPC not because the problem needed it, but because it looks great on your LinkedIn
                  profile. We've all been tempted. But your architecture should serve your users, not your
@@ -2213,7 +2150,7 @@ body.edit-mode::after{
 
             <div class="topbar reveal">
                 <div class="prompt">$ <span class="typed">kubectl get antipatterns --type=resume-driven</span><span class="cursor"></span></div>
-                <div class="counter"><span class="now">13</span><span class="sep">/</span>25</div>
+                <div class="counter"><span class="now">12</span><span class="sep">/</span>24</div>
             </div>
 
             <div class="ap-header">
@@ -2270,7 +2207,7 @@ body.edit-mode::after{
         <!-- ====================================================================
              SLIDE 14 — QUICK INTRO: WHAT IS KUBERNETES?
              ==================================================================== -->
-        <section class="slide slide-k8s" data-slide="14">
+        <section class="slide slide-k8s" data-slide="13">
             <!-- Speaker notes: So now you have 12 independent kitchen stations. Who coordinates all of
                  this? Who decides which station needs more staff during lunch rush? Who notices when a cook
                  is sick and sends a replacement? Who makes sure the dosa station doesn't take up all the
@@ -2288,7 +2225,7 @@ body.edit-mode::after{
 
             <div class="topbar reveal">
                 <div class="prompt">$ <span class="typed">kubectl explain kubernetes --simple</span><span class="cursor"></span></div>
-                <div class="counter"><span class="now">14</span><span class="sep">/</span>25</div>
+                <div class="counter"><span class="now">13</span><span class="sep">/</span>24</div>
             </div>
 
             <div class="k8s-header">
@@ -2321,7 +2258,7 @@ body.edit-mode::after{
         <!-- ====================================================================
              SLIDE 13 — SECTION TITLE: DESIGNING SERVICES FOR KUBERNETES
              ==================================================================== -->
-        <section class="slide slide-section" data-slide="15">
+        <section class="slide slide-section" data-slide="14">
             <!-- Speaker notes: OK so we know what microservices are, we know what can go wrong, we know
                  Kubernetes is our manager. Now let's talk about how to design services the right way. -->
             <div class="terminal-grid"></div>
@@ -2329,7 +2266,7 @@ body.edit-mode::after{
 
             <div class="topbar reveal">
                 <div class="prompt">$ <span class="typed">cd /part-2/designing-services</span><span class="cursor"></span></div>
-                <div class="counter"><span class="now">15</span><span class="sep">/</span>25</div>
+                <div class="counter"><span class="now">14</span><span class="sep">/</span>24</div>
             </div>
 
             <div class="section-content">
@@ -2347,7 +2284,7 @@ body.edit-mode::after{
         <!-- ====================================================================
              SLIDE 14 — THREE DESIGN PRINCIPLES
              ==================================================================== -->
-        <section class="slide slide-principles" data-slide="16">
+        <section class="slide slide-principles" data-slide="15">
             <!-- Speaker notes: Three principles. Tattoo these in your brain for every service you design.
                  One. One service, one job. At Rameshwaram, the dosa station doesn't also do billing. It
                  makes dosas. That's it. In software, if your service needs a 30-line README just to explain
@@ -2365,7 +2302,7 @@ body.edit-mode::after{
 
             <div class="topbar reveal">
                 <div class="prompt">$ <span class="typed">cat design-principles.yaml</span><span class="cursor"></span></div>
-                <div class="counter"><span class="now">16</span><span class="sep">/</span>25</div>
+                <div class="counter"><span class="now">15</span><span class="sep">/</span>24</div>
             </div>
 
             <div class="pr-header">
@@ -2411,7 +2348,7 @@ body.edit-mode::after{
         <!-- ====================================================================
              SLIDE 15 — SECTION TITLE: COMMUNICATION & DEPLOYMENT
              ==================================================================== -->
-        <section class="slide slide-section" data-slide="17">
+        <section class="slide slide-section" data-slide="16">
             <!-- Speaker notes: Now the big question. You have 12 independent services. How do they talk
                  to each other? Because they will need to. The order service needs to tell the payment
                  service "hey, charge this customer." The payment service needs to tell the notification
@@ -2422,7 +2359,7 @@ body.edit-mode::after{
 
             <div class="topbar reveal">
                 <div class="prompt">$ <span class="typed">cd /part-3/communicate-and-deploy</span><span class="cursor"></span></div>
-                <div class="counter"><span class="now">17</span><span class="sep">/</span>25</div>
+                <div class="counter"><span class="now">16</span><span class="sep">/</span>24</div>
             </div>
 
             <div class="section-content">
@@ -2440,7 +2377,7 @@ body.edit-mode::after{
         <!-- ====================================================================
              SLIDE 16 — COMMUNICATION PATTERNS
              ==================================================================== -->
-        <section class="slide slide-comm" data-slide="18">
+        <section class="slide slide-comm" data-slide="17">
             <!-- Speaker notes: Synchronous communication. Service A calls Service B and stands there
                  waiting for a reply. Like being stuck at Silk Board at 6 PM. If the car ahead of you
                  doesn't move, you don't move. If Service B is slow or down, Service A is stuck too.
@@ -2458,7 +2395,7 @@ body.edit-mode::after{
 
             <div class="topbar reveal">
                 <div class="prompt">$ <span class="typed">kubectl get comm-patterns</span><span class="cursor"></span></div>
-                <div class="counter"><span class="now">18</span><span class="sep">/</span>25</div>
+                <div class="counter"><span class="now">17</span><span class="sep">/</span>24</div>
             </div>
 
             <div class="comm-header">
@@ -2509,7 +2446,7 @@ body.edit-mode::after{
         <!-- ====================================================================
              SLIDE 17 — DEPLOYMENT STRATEGIES
              ==================================================================== -->
-        <section class="slide slide-deploy" data-slide="19">
+        <section class="slide slide-deploy" data-slide="18">
             <!-- Speaker notes: How do you update your services without downtime? Three strategies.
                  Blue-green. You run two complete versions of your service. The old one and the new one.
                  When the new one is tested and ready, you switch all traffic to it instantly. If something
@@ -2526,7 +2463,7 @@ body.edit-mode::after{
 
             <div class="topbar reveal">
                 <div class="prompt">$ <span class="typed">kubectl rollout status deployment/dosa</span><span class="cursor"></span></div>
-                <div class="counter"><span class="now">19</span><span class="sep">/</span>25</div>
+                <div class="counter"><span class="now">18</span><span class="sep">/</span>24</div>
             </div>
 
             <div class="deploy-header">
@@ -2570,7 +2507,7 @@ body.edit-mode::after{
         <!-- ====================================================================
              SLIDE 18 — SECTION TITLE: OBSERVABILITY & RESILIENCE
              ==================================================================== -->
-        <section class="slide slide-section" data-slide="20">
+        <section class="slide slide-section" data-slide="19">
             <!-- Speaker notes: This is where most teams realize they should have invested earlier. And
                  this section is important for freshers too because observability is a skill that separates
                  good engineers from great ones. Let me paint a picture. 2 AM. Your phone buzzes. Alert:
@@ -2582,7 +2519,7 @@ body.edit-mode::after{
 
             <div class="topbar reveal">
                 <div class="prompt">$ <span class="typed">cd /part-4/observe-and-resilience</span><span class="cursor"></span></div>
-                <div class="counter"><span class="now">20</span><span class="sep">/</span>25</div>
+                <div class="counter"><span class="now">19</span><span class="sep">/</span>24</div>
             </div>
 
             <div class="section-content">
@@ -2600,7 +2537,7 @@ body.edit-mode::after{
         <!-- ====================================================================
              SLIDE 19 — THREE PILLARS OF OBSERVABILITY
              ==================================================================== -->
-        <section class="slide slide-obs" data-slide="21">
+        <section class="slide slide-obs" data-slide="20">
             <!-- Speaker notes: Three pillars. Think of them as three different ways to understand what's
                  happening inside your system. Logs are the order slips. They record what happened.
                  "Customer X placed order at 10:15. Payment processed. Dosa dispatched." Factual, detailed,
@@ -2620,7 +2557,7 @@ body.edit-mode::after{
 
             <div class="topbar reveal">
                 <div class="prompt">$ <span class="typed">kubectl trace --pillars=all</span><span class="cursor"></span></div>
-                <div class="counter"><span class="now">21</span><span class="sep">/</span>25</div>
+                <div class="counter"><span class="now">20</span><span class="sep">/</span>24</div>
             </div>
 
             <div class="obs-header">
@@ -2678,7 +2615,7 @@ body.edit-mode::after{
         <!-- ====================================================================
              SLIDE 20 — RESILIENCE PATTERNS
              ==================================================================== -->
-        <section class="slide slide-resilience" data-slide="22">
+        <section class="slide slide-resilience" data-slide="21">
             <!-- Speaker notes: Three resilience patterns. These protect your system when things go wrong,
                  and things will go wrong. Circuit breakers. If the benne dosa counter is overwhelmed, you
                  stop routing new tokens to it. Let it recover. If you keep sending orders to a struggling
@@ -2695,7 +2632,7 @@ body.edit-mode::after{
 
             <div class="topbar reveal">
                 <div class="prompt">$ <span class="typed">kubectl apply -f resilience.yaml</span><span class="cursor"></span></div>
-                <div class="counter"><span class="now">22</span><span class="sep">/</span>25</div>
+                <div class="counter"><span class="now">21</span><span class="sep">/</span>24</div>
             </div>
 
             <div class="res-header">
@@ -2751,7 +2688,7 @@ body.edit-mode::after{
         <!-- ====================================================================
              SLIDE 21 — THE REAL STORY (CASE STUDY)
              ==================================================================== -->
-        <section class="slide slide-case" data-slide="23">
+        <section class="slide slide-case" data-slide="22">
             <!-- Speaker notes: Let me tell you a real story. A team had a monolith. 45-minute deploy
                  cycles. One bad deploy on a Thursday evening took down the entire platform. Everyone was
                  paged. It took 3 hours to recover. So they decided to do the microservices migration.
@@ -2771,7 +2708,7 @@ body.edit-mode::after{
 
             <div class="topbar reveal">
                 <div class="prompt">$ <span class="typed">git log --oneline case-study.md</span><span class="cursor"></span></div>
-                <div class="counter"><span class="now">23</span><span class="sep">/</span>25</div>
+                <div class="counter"><span class="now">22</span><span class="sep">/</span>24</div>
             </div>
 
             <div class="case-header">
@@ -2828,7 +2765,7 @@ body.edit-mode::after{
         <!-- ====================================================================
              SLIDE 22 — KEY TAKEAWAYS
              ==================================================================== -->
-        <section class="slide slide-takeaways" data-slide="24">
+        <section class="slide slide-takeaways" data-slide="23">
             <!-- Speaker notes: Four things I want you to take away tonight, whether you're a fresher or
                  a 10-year veteran. One. Monoliths aren't bad. If your team is small and your product is
                  new, start with a monolith. Don't microservice your way into complexity you don't need
@@ -2842,7 +2779,7 @@ body.edit-mode::after{
 
             <div class="topbar reveal">
                 <div class="prompt">$ <span class="typed">echo $TAKEAWAYS | sort --important</span><span class="cursor"></span></div>
-                <div class="counter"><span class="now">24</span><span class="sep">/</span>25</div>
+                <div class="counter"><span class="now">23</span><span class="sep">/</span>24</div>
             </div>
 
             <div class="tk-header">
@@ -2877,7 +2814,7 @@ body.edit-mode::after{
         <!-- ====================================================================
              SLIDE 23 — THANK YOU / Q&A
              ==================================================================== -->
-        <section class="slide slide-thanks" data-slide="25">
+        <section class="slide slide-thanks" data-slide="24">
             <!-- Speaker notes: That's it from me. Thank you for spending your Wednesday evening here
                  instead of scrolling through reels. I've put a QR code on screen and I'll drop the link in
                  chat too. It goes to a resource page with everything I mentioned: OpenTelemetry docs, the
@@ -2893,7 +2830,7 @@ body.edit-mode::after{
 
             <div class="topbar reveal">
                 <div class="prompt">$ <span class="typed">exit 0 — thank you!</span><span class="cursor"></span></div>
-                <div class="counter"><span class="now">25</span><span class="sep">/</span>25</div>
+                <div class="counter"><span class="now">24</span><span class="sep">/</span>24</div>
             </div>
 
             <div class="thanks-content">
@@ -2949,8 +2886,8 @@ body.edit-mode::after{
      DECK CONTROLS (outside the stage)
      =========================================== -->
 <div class="deck-controls">
-    <span id="slideCounter">01 / 25</span>
-    <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:4.0%"></div></div>
+    <span id="slideCounter">01 / 24</span>
+    <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:4.2%"></div></div>
     <span class="nav-hint">← → / Space</span>
 </div>
 
