@@ -1,0 +1,132 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" font-family="Inter, 'Helvetica Neue', system-ui, sans-serif" role="img" aria-label="Hub-and-spoke cluster topology: home cluster with virtual nodes abstracting five remote clusters">
+  <title>Hub-and-spoke cluster topology</title>
+  <desc>A central home cluster surrounded by four red dashed Liqo virtual nodes, which abstract five capacity-colored remote clusters on the perimeter.</desc>
+
+  <style>
+    .lbl        { fill: #06062D; font-weight: 600; }
+    .lbl-white  { fill: #FFFFFF; font-weight: 700; }
+    .lbl-sub    { fill: #4852A3; font-weight: 500; }
+    .cap        { fill: #FFFFFF; font-weight: 600; }
+    .home-title { fill: #FFFFFF; font-weight: 800; letter-spacing: 1px; }
+    .edge-real  { fill: none; stroke: #4852A3; stroke-width: 4; }
+    .edge-virtual { fill: none; stroke: #F33357; stroke-width: 3.5; stroke-dasharray: 12 9; stroke-linecap: round; }
+    .virtual-node { fill: #FFFFFF; stroke: #F33357; stroke-width: 3.5; stroke-dasharray: 12 9; }
+    .vtag       { fill: #F33357; font-weight: 700; letter-spacing: 0.5px; }
+    .vname      { fill: #06062D; font-weight: 700; }
+  </style>
+
+  <!-- background -->
+  <rect x="0" y="0" width="1600" height="900" fill="#FFFFFF"/>
+
+  <!-- ===================================================================
+       CONNECTORS  (drawn first so nodes sit on top)
+       edge-real   = SOLID  : remote cluster  ->  its virtual node
+       edge-virtual= DASHED : virtual node     ->  home cluster
+  ==================================================================== -->
+
+  <!-- virtual node -> home (dashed red) -->
+  <line class="edge-virtual" x1="800" y1="450" x2="800" y2="235"/>   <!-- to vnode-1 (top) -->
+  <line class="edge-virtual" x1="800" y1="450" x2="1075" y2="360"/>  <!-- to vnode-2 (right-top) -->
+  <line class="edge-virtual" x1="800" y1="450" x2="1075" y2="540"/>  <!-- to vnode-3 (right-bot) -->
+  <line class="edge-virtual" x1="800" y1="450" x2="525" y2="360"/>   <!-- to vnode-4 (left-top) -->
+
+  <!-- remote cluster -> virtual node (solid) -->
+  <line class="edge-real" x1="800" y1="150" x2="800" y2="180"/>       <!-- Remote A -> vnode-1 -->
+  <line class="edge-real" x1="1330" y1="230" x2="1160" y2="330"/>     <!-- Remote B -> vnode-2 -->
+  <line class="edge-real" x1="1330" y1="670" x2="1160" y2="570"/>     <!-- Remote C -> vnode-3 -->
+  <line class="edge-real" x1="270" y1="230" x2="440" y2="330"/>       <!-- Remote D -> vnode-4 -->
+  <line class="edge-real" x1="270" y1="670" x2="440" y2="570"/>       <!-- Remote E -> vnode-4 (extra) -->
+  <line class="edge-real" x1="440" y1="390" x2="440" y2="570"/>       <!-- vnode-4 link segment for Remote E -->
+
+  <!-- ===================================================================
+       HOME CLUSTER  (center hub)
+  ==================================================================== -->
+  <g id="home-cluster">
+    <rect x="660" y="390" width="280" height="120" rx="18" fill="#3939D9" stroke="#06062D" stroke-width="3"/>
+    <text class="home-title" x="800" y="440" font-size="30" text-anchor="middle">HOME CLUSTER</text>
+    <text class="cap" x="800" y="475" font-size="18" text-anchor="middle" fill="#D7D7F7">workloads submitted here</text>
+  </g>
+
+  <!-- ===================================================================
+       VIRTUAL NODES  (red dashed — Liqo abstraction)
+  ==================================================================== -->
+  <!-- vnode-1 : top -->
+  <g class="virtual-node-group">
+    <rect class="virtual-node" id="vnode-1" x="680" y="180" width="240" height="55" rx="14"/>
+    <text class="vname" x="800" y="205" font-size="19" text-anchor="middle">virtual-node vk-1</text>
+    <text class="vtag"  x="800" y="226" font-size="13" text-anchor="middle">VIRTUAL</text>
+  </g>
+  <!-- vnode-2 : right-top -->
+  <g class="virtual-node-group">
+    <rect class="virtual-node" id="vnode-2" x="1040" y="330" width="240" height="55" rx="14"/>
+    <text class="vname" x="1160" y="355" font-size="19" text-anchor="middle">virtual-node vk-2</text>
+    <text class="vtag"  x="1160" y="376" font-size="13" text-anchor="middle">VIRTUAL</text>
+  </g>
+  <!-- vnode-3 : right-bottom -->
+  <g class="virtual-node-group">
+    <rect class="virtual-node" id="vnode-3" x="1040" y="515" width="240" height="55" rx="14"/>
+    <text class="vname" x="1160" y="540" font-size="19" text-anchor="middle">virtual-node vk-3</text>
+    <text class="vtag"  x="1160" y="561" font-size="13" text-anchor="middle">VIRTUAL</text>
+  </g>
+  <!-- vnode-4 : left -->
+  <g class="virtual-node-group">
+    <rect class="virtual-node" id="vnode-4" x="320" y="330" width="240" height="55" rx="14"/>
+    <text class="vname" x="440" y="355" font-size="19" text-anchor="middle">virtual-node vk-4</text>
+    <text class="vtag"  x="440" y="376" font-size="13" text-anchor="middle">VIRTUAL</text>
+  </g>
+
+  <!-- ===================================================================
+       REMOTE CLUSTERS  (solid, capacity-colored)
+       on-prem = #3939D9 (blue) | spot = #F0A93B (amber) | on-demand = #22B07D (green)
+  ==================================================================== -->
+  <!-- Remote A : on-prem (blue) : top -->
+  <g class="remote-cluster">
+    <rect id="remote-a" x="640" y="60" width="320" height="90" rx="16" fill="#3939D9" stroke="#06062D" stroke-width="3"/>
+    <text class="lbl-white" x="800" y="98" font-size="22" text-anchor="middle">Remote A</text>
+    <text class="cap" x="800" y="126" font-size="17" text-anchor="middle" fill="#D7D7F7">on-prem</text>
+  </g>
+  <!-- Remote B : on-prem (blue) : right-top -->
+  <g class="remote-cluster">
+    <rect id="remote-b" x="1290" y="140" width="280" height="90" rx="16" fill="#3939D9" stroke="#06062D" stroke-width="3"/>
+    <text class="lbl-white" x="1430" y="178" font-size="22" text-anchor="middle">Remote B</text>
+    <text class="cap" x="1430" y="206" font-size="17" text-anchor="middle" fill="#D7D7F7">on-prem</text>
+  </g>
+  <!-- Remote C : spot (amber) : right-bottom -->
+  <g class="remote-cluster">
+    <rect id="remote-c" x="1290" y="580" width="280" height="90" rx="16" fill="#F0A93B" stroke="#06062D" stroke-width="3"/>
+    <text class="lbl" x="1430" y="618" font-size="22" text-anchor="middle" fill="#5A3E00">Remote C</text>
+    <text class="lbl" x="1430" y="646" font-size="17" text-anchor="middle" fill="#5A3E00">spot</text>
+  </g>
+  <!-- Remote D : spot (amber) : left-top -->
+  <g class="remote-cluster">
+    <rect id="remote-d" x="30" y="140" width="280" height="90" rx="16" fill="#F0A93B" stroke="#06062D" stroke-width="3"/>
+    <text class="lbl" x="170" y="178" font-size="22" text-anchor="middle" fill="#5A3E00">Remote D</text>
+    <text class="lbl" x="170" y="206" font-size="17" text-anchor="middle" fill="#5A3E00">spot</text>
+  </g>
+  <!-- Remote E : on-demand (green) : left-bottom -->
+  <g class="remote-cluster">
+    <rect id="remote-e" x="30" y="580" width="280" height="90" rx="16" fill="#22B07D" stroke="#06062D" stroke-width="3"/>
+    <text class="lbl-white" x="170" y="618" font-size="22" text-anchor="middle">Remote E</text>
+    <text class="cap" x="170" y="646" font-size="17" text-anchor="middle" fill="#E4F7EF">on-demand</text>
+  </g>
+
+  <!-- ===================================================================
+       LEGEND  (bottom-left)
+  ==================================================================== -->
+  <g id="legend">
+    <rect x="30" y="740" width="620" height="130" rx="12" fill="#FFFFFF" stroke="#4852A3" stroke-width="2"/>
+    <text class="lbl" x="55" y="775" font-size="20" font-weight="700">Legend</text>
+
+    <rect x="55" y="795" width="26" height="26" rx="5" fill="#3939D9"/>
+    <text class="lbl-sub" x="92" y="814" font-size="17">On-prem</text>
+
+    <rect x="215" y="795" width="26" height="26" rx="5" fill="#F0A93B"/>
+    <text class="lbl-sub" x="252" y="814" font-size="17">Spot</text>
+
+    <rect x="345" y="795" width="26" height="26" rx="5" fill="#22B07D"/>
+    <text class="lbl-sub" x="382" y="814" font-size="17">On-demand</text>
+
+    <rect x="55" y="835" width="26" height="26" rx="5" fill="#FFFFFF" stroke="#F33357" stroke-width="3" stroke-dasharray="8 6"/>
+    <text class="lbl-sub" x="92" y="854" font-size="17">Virtual node (Liqo abstraction)</text>
+  </g>
+</svg>

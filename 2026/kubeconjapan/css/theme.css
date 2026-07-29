@@ -1,0 +1,1276 @@
+/* =====================================================================
+   KubeCon + CloudNativeCon Japan 2026 — shared design system
+   Overrides reveal.js base + white.css to the official brand look.
+   Offline-safe: no runtime CDN dependencies.
+   ===================================================================== */
+
+/* ---------------------------------------------------------------------
+   1. Brand palette + tokens (exact hex from official template SVGs)
+   --------------------------------------------------------------------- */
+:root {
+  /* Core brand */
+  --kc-blue:    #3939D9;  /* primary brand blue background */
+  --kc-blue-lt: #5050D3;  /* lighter blue (geometric accents) */
+  --kc-navy:    #06062D;  /* deep navy (dark sections / text on light) */
+  --kc-muted:   #4852A3;  /* muted purple-blue (secondary) */
+  --kc-red:     #F33357;  /* RED ACCENT — reserved ONLY for virtual/dashed/Liqo */
+  --kc-yellow:  #FFE100;  /* template mosaic yellow — decorative accents only */
+  --kc-tpl-red: #F50A0E;  /* template mosaic red — decorative accents only (NOT the virtual red) */
+  --kc-white:   #FFFFFF;
+  --kc-ink:     #0B0B1A;  /* near-black body ink on white slides */
+
+  /* Capacity color-coding tokens (consistent across all diagrams) */
+  --cap-onprem:   #3939D9;  /* on-prem   = blue  */
+  --cap-spot:     #F0A93B;  /* spot      = amber */
+  --cap-ondemand: #22B07D;  /* on-demand = green */
+
+  /* [FILL] placeholder accent (amber highlight) */
+  --kc-fill-bg:     #FFE9A8;
+  --kc-fill-border: #F0A93B;
+  --kc-fill-ink:    #5A3E00;
+
+  /* Typography scale */
+  --kc-font: "Clarity City", "Inter", "Helvetica Neue", "Segoe UI",
+             system-ui, -apple-system, sans-serif;
+  --kc-mono: "SF Mono", "JetBrains Mono", "Fira Code", "Menlo",
+             "Consolas", monospace;
+
+  /* Spacing rhythm */
+  --kc-gap:   28px;
+  --kc-pad:   48px;
+  --kc-radius: 12px;
+}
+
+/* ---------------------------------------------------------------------
+   2. Reveal base — default deck reads as the DARK BLUE brand
+   --------------------------------------------------------------------- */
+.reveal {
+  font-family: var(--kc-font);
+  font-size: 40px;
+  font-weight: 400;
+  color: var(--kc-white);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Override reveal-white.css light background: brand blue is the default */
+.reveal-viewport,
+body {
+  background: var(--kc-blue);
+  background-color: var(--kc-blue);
+}
+
+.reveal .slides {
+  text-align: left;
+}
+
+.reveal .slides section {
+  height: 100%;
+  padding: var(--kc-pad);
+  box-sizing: border-box;
+}
+
+/* Headings — bold, tight leading */
+.reveal h1,
+.reveal h2,
+.reveal h3,
+.reveal h4 {
+  font-family: var(--kc-font);
+  color: var(--kc-white);
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  margin: 0 0 0.4em 0;
+  text-transform: none;
+  text-shadow: none;
+}
+.reveal h1 { font-size: 1.9em;  font-weight: 800; }
+.reveal h2 { font-size: 1.45em; font-weight: 800; }
+.reveal h3 { font-size: 1.15em; font-weight: 700; }
+.reveal h4 { font-size: 1.0em;  font-weight: 700; }
+
+.reveal p,
+.reveal li {
+  line-height: 1.35;
+  font-weight: 400;
+}
+
+.reveal a {
+  color: var(--kc-blue-lt);
+  text-decoration: none;
+}
+.reveal strong { font-weight: 700; }
+.reveal em { font-style: italic; }
+
+.reveal ul,
+.reveal ol {
+  display: block;
+  margin-left: 1em;
+}
+
+/* ---------------------------------------------------------------------
+   3. Slide variants
+   --------------------------------------------------------------------- */
+/* Dark (default brand) — blue background, white text */
+.reveal .slides section.slide-dark {
+  background: var(--kc-blue);
+  color: var(--kc-white);
+}
+.reveal .slides section.slide-dark h1,
+.reveal .slides section.slide-dark h2,
+.reveal .slides section.slide-dark h3,
+.reveal .slides section.slide-dark h4 {
+  color: var(--kc-white);
+}
+
+/* Light — white background, navy ink */
+.reveal .slides section.slide-light {
+  background: var(--kc-white);
+  color: var(--kc-ink);
+}
+.reveal .slides section.slide-light h1,
+.reveal .slides section.slide-light h2,
+.reveal .slides section.slide-light h3,
+.reveal .slides section.slide-light h4 {
+  color: var(--kc-navy);
+}
+.reveal .slides section.slide-light p,
+.reveal .slides section.slide-light li {
+  color: var(--kc-ink);
+}
+.reveal .slides section.slide-light a {
+  color: var(--kc-blue);
+}
+
+/* ---------------------------------------------------------------------
+   4. Footer — branded tag line pinned to slide bottom
+   --------------------------------------------------------------------- */
+.kc-footer {
+  position: absolute;
+  left: var(--kc-pad);
+  right: var(--kc-pad);
+  bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.5em;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  opacity: 0.85;
+  pointer-events: none;
+}
+.kc-footer .kc-pagenum {
+  font-variant-numeric: tabular-nums;
+  min-width: 2ch;
+}
+/* On light slides, footer ink flips to navy */
+.reveal .slides section.slide-light .kc-footer {
+  color: var(--kc-navy);
+}
+
+/* ---------------------------------------------------------------------
+   5. Requirement pills — fixed corner cluster
+   UNIFY / TRANSPARENT / GLOBAL QUEUE / REAL FAILOVER
+   --------------------------------------------------------------------- */
+.kc-pills {
+  position: absolute;
+  top: 32px;
+  right: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  z-index: 5;
+}
+.kc-pill {
+  display: inline-block;
+  font-size: 0.42em;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 8px 16px;
+  border-radius: 999px;
+  /* Unlit = dim / outline */
+  color: rgba(255, 255, 255, 0.55);
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  background: transparent;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+/* Lit = filled brand blue / highlighted */
+.kc-pill.lit {
+  color: var(--kc-white);
+  background: var(--kc-blue-lt);
+  border-color: var(--kc-white);
+  box-shadow: 0 0 0 2px rgba(80, 80, 211, 0.4);
+}
+/* Pills on light slides get navy outline when unlit */
+.reveal .slides section.slide-light .kc-pill {
+  color: var(--kc-muted);
+  border-color: rgba(72, 82, 163, 0.5);
+}
+.reveal .slides section.slide-light .kc-pill.lit {
+  color: var(--kc-white);
+  background: var(--kc-blue);
+  border-color: var(--kc-blue);
+}
+
+/* ---------------------------------------------------------------------
+   6. Capacity legend + color tokens (consistent everywhere)
+   --------------------------------------------------------------------- */
+.cap-legend {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  font-size: 0.5em;
+  font-weight: 600;
+}
+.cap-legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.cap-legend > span::before {
+  content: "";
+  display: inline-block;
+  width: 0.9em;
+  height: 0.9em;
+  border-radius: 3px;
+  background: currentColor;
+}
+
+/* Color / fill / border utilities */
+.cap-onprem   { color: var(--cap-onprem);   fill: var(--cap-onprem);   border-color: var(--cap-onprem); }
+.cap-spot     { color: var(--cap-spot);     fill: var(--cap-spot);     border-color: var(--cap-spot); }
+.cap-ondemand { color: var(--cap-ondemand); fill: var(--cap-ondemand); border-color: var(--cap-ondemand); }
+
+/* ---------------------------------------------------------------------
+   7. Virtual / Liqo accent
+   RED reserved for virtual/dashed/Liqo only
+   --------------------------------------------------------------------- */
+.kc-virtual {
+  color: var(--kc-red);
+  border: 2px dashed var(--kc-red);
+  fill: none;
+  stroke: var(--kc-red);
+  border-radius: var(--kc-radius);
+  padding: 0.3em 0.5em;
+}
+/* SVG virtual nodes / dashed edges */
+.kc-virtual line,
+.kc-virtual path,
+.kc-virtual rect,
+.kc-virtual .edge {
+  stroke: var(--kc-red);
+  stroke-dasharray: 6 6;
+  fill: none;
+}
+
+/* ---------------------------------------------------------------------
+   8. [FILL] placeholder — obvious, never mistaken for real data
+   --------------------------------------------------------------------- */
+.kc-fill {
+  display: inline-block;
+  font-family: var(--kc-mono);
+  font-weight: 700;
+  font-size: 0.9em;
+  color: var(--kc-fill-ink);
+  background: var(--kc-fill-bg);
+  border: 2px dashed var(--kc-fill-border);
+  border-radius: 6px;
+  padding: 0.05em 0.4em;
+  line-height: 1.2;
+}
+
+/* ---------------------------------------------------------------------
+   9. YAML / code — slide-10 renders LARGE and readable
+   works with highlight.js (monokai theme)
+   --------------------------------------------------------------------- */
+.reveal pre {
+  width: 100%;
+  margin: 0.5em 0;
+  box-shadow: 0 8px 24px rgba(6, 6, 45, 0.35);
+  border-radius: var(--kc-radius);
+  font-size: 1em;
+}
+.reveal pre code {
+  font-family: var(--kc-mono);
+  font-size: 0.62em;      /* LARGE relative to reveal base 40px */
+  line-height: 1.5;
+  padding: 24px 28px;
+  max-height: none;
+  border-radius: var(--kc-radius);
+  overflow: visible;
+  tab-size: 2;
+}
+/* Inline code */
+.reveal code:not(pre code) {
+  font-family: var(--kc-mono);
+  font-size: 0.85em;
+  background: rgba(255, 255, 255, 0.12);
+  padding: 0.1em 0.35em;
+  border-radius: 5px;
+}
+.reveal .slides section.slide-light code:not(pre code) {
+  background: rgba(57, 57, 217, 0.1);
+  color: var(--kc-navy);
+}
+
+/* ---------------------------------------------------------------------
+   10. Utility — heading scale helpers, lead, grid, card, quote
+   --------------------------------------------------------------------- */
+/* Lead paragraph */
+.kc-lead {
+  font-size: 1.1em;
+  font-weight: 400;
+  line-height: 1.4;
+  max-width: 26em;
+  opacity: 0.95;
+}
+
+/* Heading-scale helpers */
+.kc-xl { font-size: 2.2em; font-weight: 800; line-height: 1.02; }
+.kc-lg { font-size: 1.6em; font-weight: 800; line-height: 1.08; }
+.kc-sm { font-size: 0.7em; font-weight: 600; }
+
+/* Two-column grid */
+.kc-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--kc-gap);
+  align-items: start;
+}
+.kc-cols.kc-cols-3 { grid-template-columns: repeat(3, 1fr); }
+
+/* Card */
+.kc-card {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: var(--kc-radius);
+  padding: var(--kc-gap);
+}
+.reveal .slides section.slide-light .kc-card {
+  background: #F4F5FC;
+  border-color: rgba(72, 82, 163, 0.2);
+  color: var(--kc-ink);
+}
+
+/* Quote banner */
+.kc-quote {
+  border-left: 6px solid var(--kc-blue-lt);
+  padding: 0.3em 0 0.3em 0.8em;
+  font-size: 1.15em;
+  font-weight: 600;
+  font-style: italic;
+  line-height: 1.3;
+}
+.reveal .slides section.slide-light .kc-quote {
+  border-left-color: var(--kc-blue);
+  color: var(--kc-navy);
+}
+
+/* ---------------------------------------------------------------------
+   11. Background scrim — darken imagery for text contrast
+   --------------------------------------------------------------------- */
+.reveal .slides section.bg-scrim::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg,
+              rgba(6, 6, 45, 0.55) 0%,
+              rgba(6, 6, 45, 0.72) 100%);
+  z-index: 0;
+  pointer-events: none;
+}
+.reveal .slides section.bg-scrim > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ---------------------------------------------------------------------
+   12. Title slide layout
+   --------------------------------------------------------------------- */
+/* Title slide: center the section itself so the wrap need not claim height:100% */
+.reveal .slides section.kc-title-section {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.kc-title-wrap {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  max-width: 30em;
+  position: relative;
+  z-index: 1;
+}
+.kc-eventtag {
+  font-size: 0.5em;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.85;
+  margin-bottom: 0.6em;
+}
+.kc-speaker {
+  font-size: 0.72em;
+  font-weight: 600;
+  margin-top: 0.8em;
+}
+.kc-links {
+  font-family: var(--kc-mono);
+  font-size: 0.42em;
+  font-weight: 500;
+  opacity: 0.75;
+  margin-top: 0.6em;
+}
+.kc-boundary {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 8%;
+  left: auto;
+  width: 0;
+  border-left: 2px dashed var(--kc-red);
+  z-index: 0;
+  opacity: 0.5;
+}
+
+/* ---------------------------------------------------------------------
+   13. Hook slide — big centered sentence + pending indicator
+   --------------------------------------------------------------------- */
+.kc-hook {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+}
+.kc-hook p {
+  font-size: 1.7em;
+  font-weight: 800;
+  line-height: 1.2;
+  max-width: 22em;
+}
+.kc-pending {
+  position: absolute;
+  top: 40px;
+  left: 48px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--kc-mono);
+  font-size: 0.42em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--kc-fill-border);
+}
+.kc-pending::before {
+  content: "";
+  width: 0.7em;
+  height: 0.7em;
+  border-radius: 50%;
+  background: var(--kc-fill-border);
+  animation: kc-pulse 1.2s ease-in-out infinite;
+}
+@keyframes kc-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.25; transform: scale(0.7); }
+}
+
+/* ---------------------------------------------------------------------
+   14. Data slide — chart skeleton + callout stats
+   --------------------------------------------------------------------- */
+.kc-stats {
+  display: flex;
+  gap: 48px;
+  margin: 0.3em 0 0.4em 0;
+}
+.kc-stat .kc-stat-num {
+  font-size: 1.6em;
+  font-weight: 800;
+  line-height: 1;
+}
+.kc-stat .kc-stat-lbl {
+  font-size: 0.5em;
+  font-weight: 600;
+  opacity: 0.85;
+}
+.kc-chart {
+  width: 100%;
+  max-height: 46vh;
+}
+.kc-chart .axis  { stroke: rgba(255,255,255,0.6); stroke-width: 2; }
+.kc-chart .grid  { stroke: rgba(255,255,255,0.15); stroke-width: 1; }
+.kc-chart .util-line { stroke: var(--cap-ondemand); stroke-width: 4; fill: none; }
+.kc-chart .lbl   { fill: rgba(255,255,255,0.85); font-size: 20px; font-family: var(--kc-font); }
+.kc-chart .fill-text {
+  fill: var(--kc-fill-ink);
+  font-family: var(--kc-mono);
+  font-weight: 700;
+  font-size: 20px;
+}
+.kc-chart .fill-box { fill: var(--kc-fill-bg); stroke: var(--kc-fill-border); stroke-width: 2; stroke-dasharray: 5 4; }
+.kc-caption {
+  font-size: 0.55em;
+  font-weight: 600;
+  font-style: italic;
+  opacity: 0.9;
+}
+
+/* ---------------------------------------------------------------------
+   15. Problem cards — icon + label + text
+   --------------------------------------------------------------------- */
+.kc-card .kc-icon { display: block; margin-bottom: 0.4em; }
+.kc-card .kc-card-lbl {
+  font-size: 0.7em;
+  font-weight: 800;
+  margin-bottom: 0.25em;
+}
+.kc-card p { font-size: 0.55em; line-height: 1.35; margin: 0; }
+
+/* ---------------------------------------------------------------------
+   16. Requirement rows (slide 6 canonical establishment)
+   --------------------------------------------------------------------- */
+.kc-req-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin: 0.4em 0;
+}
+.kc-req-row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: var(--kc-radius);
+  padding: 18px 24px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.kc-req-row:hover {
+  transform: scale(1.02);
+  box-shadow: 0 8px 24px rgba(6, 6, 45, 0.25);
+}
+.kc-req-row .kc-req-icon { flex: 0 0 auto; display: inline-flex; align-items: center; }
+.kc-req-row .kc-pill { flex: 0 0 auto; font-size: 0.5em; }
+.kc-req-row p { font-size: 0.66em; margin: 0; opacity: 0.95; flex: 1 1 auto; }
+.kc-req-row .kc-req-check { flex: 0 0 auto; display: inline-flex; margin-left: auto; }
+
+/* ---------------------------------------------------------------------
+   17. Corner requirement pills (slides 7+) — fixed top-right cluster,
+   horizontal row of small pills. Reuses .kc-pill / .kc-pill.lit.
+   --------------------------------------------------------------------- */
+.kc-pills-corner {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  left: auto;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  max-width: 60%;
+  z-index: 6;
+}
+.kc-pills-corner .kc-pill {
+  font-size: 0.34em;
+  padding: 6px 12px;
+}
+/* Content must clear the absolutely-positioned corner pills row (~34px tall
+   at top:24px). Push the first heading/statement down so it never slides
+   under the pills. Applies only to sections that actually have corner pills. */
+.reveal .slides section:has(.kc-pills-corner) > h2,
+.reveal .slides section:has(.kc-pills-corner) > h3,
+.reveal .slides section:has(.kc-pills-corner) > .kc-bigstatement,
+.reveal .slides section:has(.kc-pills-corner) > .kc-hero-beat {
+  margin-top: 30px;
+}
+/* Right-pad headings on pill slides so the heading's right edge never slides
+   under the corner pills (pills occupy the top-right ~560px). */
+.reveal .slides section:has(.kc-pills-corner) > h2 {
+  padding-right: 120px;
+}
+/* Slide 7 is a dense mosaic hero: tighten vertical rhythm so the footer stays
+   on-canvas. */
+.reveal .slides section.kc-mosaic:has(.kc-diagram) > p {
+  margin-top: 0.35em;
+  margin-bottom: 0.35em;
+}
+
+/* ---------------------------------------------------------------------
+   18. Mental-model / mechanics diagrams (slides 7, 8)
+   --------------------------------------------------------------------- */
+.kc-diagram {
+  width: 100%;
+  max-height: 58vh;
+  margin: 0.3em 0;
+}
+.kc-defbox {
+  border-left: 6px solid var(--kc-blue-lt);
+  padding: 0.35em 0 0.35em 0.8em;
+  font-size: 0.7em;
+  font-weight: 500;
+  line-height: 1.35;
+  margin: 0.3em 0;
+  max-width: 34em;
+}
+.reveal .slides section.slide-light .kc-defbox { border-left-color: var(--kc-blue); }
+.kc-subline {
+  font-size: 0.62em;
+  font-weight: 500;
+  opacity: 0.9;
+  margin: 0.2em 0;
+}
+.kc-callout {
+  font-size: 0.62em;
+  font-weight: 700;
+  font-style: italic;
+  color: var(--kc-red);
+  margin: 0.3em 0;
+}
+.reveal .slides section.slide-light .kc-callout { color: var(--kc-red); }
+.kc-faceline {
+  font-size: 0.55em;
+  font-weight: 600;
+  opacity: 0.9;
+  margin: 0.3em 0 0 0;
+}
+
+/* Numbered mechanics list (slide 8) */
+.kc-steps {
+  list-style: none;
+  margin: 0.3em 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 32px;
+}
+.kc-steps li {
+  position: relative;
+  padding-left: 2.2em;
+  font-size: 0.5em;
+  line-height: 1.35;
+}
+.kc-steps li .kc-step-n {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1.6em;
+  height: 1.6em;
+  border-radius: 50%;
+  background: var(--kc-blue-lt);
+  color: var(--kc-white);
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85em;
+}
+.kc-steps li strong { color: var(--kc-white); }
+.reveal .slides section.slide-light .kc-steps li strong { color: var(--kc-navy); }
+
+/* ---------------------------------------------------------------------
+   19. Fleet legend list (slide 9) beside topology
+   --------------------------------------------------------------------- */
+.kc-fleet {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.kc-fleet li {
+  font-size: 0.5em;
+  line-height: 1.3;
+  padding-left: 1.4em;
+  position: relative;
+}
+.kc-fleet li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.25em;
+  width: 0.8em;
+  height: 0.8em;
+  border-radius: 3px;
+  background: var(--dot, var(--kc-blue));
+}
+.kc-fleet li code {
+  font-size: 0.8em;
+}
+
+/* ---------------------------------------------------------------------
+   20. Networking comparison table (slide 11) — neutral, no favored col
+   --------------------------------------------------------------------- */
+.kc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.42em;
+  margin: 0.3em 0;
+}
+.kc-table th,
+.kc-table td {
+  border: 1px solid rgba(72, 82, 163, 0.35);
+  padding: 10px 14px;
+  text-align: left;
+  vertical-align: top;
+  line-height: 1.3;
+}
+.kc-table thead th {
+  background: #EDEEF9;
+  color: var(--kc-navy);
+  font-weight: 800;
+}
+.kc-table tbody th {
+  background: #F4F5FC;
+  color: var(--kc-navy);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.kc-table tbody td { color: var(--kc-ink); }
+.kc-ref {
+  font-size: 0.4em;
+  font-style: italic;
+  opacity: 0.75;
+  margin: 0.4em 0 0 0;
+}
+
+/* ---------------------------------------------------------------------
+   21. Two-stage / two-path flow layouts (slides 12, 13)
+   --------------------------------------------------------------------- */
+.kc-map {
+  list-style: none;
+  margin: 0.2em 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.kc-map li {
+  font-size: 0.48em;
+  line-height: 1.35;
+}
+.kc-map li strong { color: inherit; }
+.kc-gap-note {
+  font-size: 0.55em;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.kc-twopath {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--kc-gap);
+  align-items: stretch;
+}
+.kc-path {
+  border-radius: var(--kc-radius);
+  padding: var(--kc-gap);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+.kc-path h4 { font-size: 0.62em; margin-bottom: 0.4em; }
+.kc-path p, .kc-path li { font-size: 0.46em; line-height: 1.35; }
+.kc-tradeoff {
+  font-size: 0.48em;
+  line-height: 1.4;
+  margin: 0.4em 0;
+}
+.kc-flow { width: 100%; max-height: 40vh; }
+
+/* ---------------------------------------------------------------------
+   16. Slides 14-20 — closing arc (failure honesty, results, scars,
+       vendor, takeaways, thank-you)
+   --------------------------------------------------------------------- */
+
+/* Slide 14 — dominant statement + small contrast */
+.kc-bigstatement {
+  font-size: 1.5em;
+  font-weight: 800;
+  line-height: 1.12;
+  max-width: 22em;
+  margin: 0.1em 0 0.5em;
+}
+.kc-contrast {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--kc-gap);
+  align-items: start;
+}
+.kc-contrast .kc-card p { font-size: 0.5em; line-height: 1.4; margin: 0; }
+.kc-contrast .kc-card .kc-card-lbl {
+  font-size: 0.42em;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  opacity: 0.7;
+  display: block;
+  margin-bottom: 0.4em;
+}
+.kc-teaser {
+  font-family: var(--kc-mono);
+  font-size: 0.5em;
+  line-height: 1.6;
+}
+.kc-teaser .q { color: var(--kc-red); font-weight: 800; }
+
+/* Slide 15 — two failure panels */
+.kc-guardstrip {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--kc-gap);
+  margin: 0.2em 0 0.4em;
+}
+.kc-guardstrip .kc-defbox { font-size: 0.44em; line-height: 1.35; padding: 0.5em 0.7em; }
+.kc-panels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--kc-gap);
+  align-items: stretch;
+}
+.kc-panel {
+  border-radius: var(--kc-radius);
+  padding: 18px 20px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+.kc-panel h4 { font-size: 0.58em; margin-bottom: 0.3em; }
+.kc-panel ul { list-style: none; margin: 0.2em 0; padding: 0; }
+.kc-panel li { font-size: 0.4em; line-height: 1.35; margin-bottom: 8px; }
+.kc-panel .kc-topo { width: 100%; max-height: 26vh; display: block; margin: 0.2em 0; }
+.kc-panel .kc-panel-lbl { font-size: 0.4em; font-weight: 700; color: var(--kc-red); }
+
+/* Slide 16 — three-beat hero */
+.kc-hero-beat { text-align: center; margin: 0.3em 0 0.2em; }
+.kc-hero-beat .kc-fill { font-size: 2.6em; padding: 0.15em 0.5em; }
+.kc-stat-big {
+  display: inline-block;
+  font-size: 3.2em;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  background: rgba(255, 225, 0, 0.15);
+  border: 2px solid var(--kc-yellow);
+  border-radius: var(--kc-radius);
+  padding: 0.1em 0.4em;
+  color: var(--kc-white);
+}
+.kc-hero-beat .kc-hero-lbl {
+  display: block;
+  font-size: 0.6em;
+  opacity: 0.75;
+  margin-top: 0.6em;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.kc-beat2 { text-align: center; font-size: 0.7em; opacity: 0.85; margin: 0.4em 0; }
+/* All three beats flow normally in a centered column (no absolute beat3 that
+   collided with beat2). Content sits left of the right mosaic strip. */
+.kc-beat3 {
+  text-align: center;
+  font-size: 0.42em;
+  opacity: 0.8;
+  margin: 0.9em 0 0;
+}
+.reveal .slides section.kc-mosaic-strip:has(.kc-hero-beat) {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-right: 27%;
+}
+/* Slide 16 result cards */
+.kc-result-stats {
+  display: flex;
+  gap: 24px;
+  margin: 1em 0 0.5em;
+  justify-content: center;
+}
+.kc-result-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: var(--kc-radius);
+  padding: 20px 18px;
+  min-width: 180px;
+  text-align: center;
+}
+.kc-result-card .kc-result-num {
+  font-size: 1.4em;
+  font-weight: 800;
+  color: #fff;
+}
+.kc-result-card .kc-result-lbl {
+  font-size: 0.42em;
+  opacity: 0.75;
+  line-height: 1.3;
+}
+
+/* Slide 17 — scar cards */
+.kc-scars {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+  align-items: stretch;
+  grid-auto-rows: minmax(340px, auto);
+}
+.kc-scar {
+  position: relative;
+  border-radius: var(--kc-radius);
+  padding: 32px 28px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  overflow: hidden;
+}
+.kc-scar::after {
+  content: "";
+  position: absolute;
+  right: -20px; bottom: -20px;
+  width: 120px; height: 120px;
+  background-size: cover;
+  background-position: center;
+  opacity: 0.14;
+  transform: rotate(-12deg);
+  pointer-events: none;
+}
+.kc-scar.scar-a::after { background-image: url("../Assets/scar-1.jpg"); }
+.kc-scar.scar-b::after { background-image: url("../Assets/scar-2.jpg"); }
+.kc-scar.scar-c::after { background-image: url("../Assets/scar-1.jpg"); }
+.kc-scar h4 { font-size: 0.6em; margin-bottom: 0.5em; position: relative; z-index: 1; overflow-wrap: anywhere; }
+.kc-scar p { font-size: 0.5em; line-height: 1.5; margin: 0; position: relative; z-index: 1; overflow-wrap: anywhere; }
+.kc-scar code { overflow-wrap: anywhere; word-break: break-word; }
+.kc-scar .kc-scar-num {
+  font-size: 1.2em; font-weight: 800; color: var(--kc-red); display: block; margin-bottom: 0.3em;
+}
+
+/* Slide 18 — the one vendor slide, deliberately calmer */
+.kc-vendor-label {
+  font-size: 0.5em;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  opacity: 0.7;
+  margin: 0.2em 0 0.5em;
+}
+.kc-vendor-body {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: var(--kc-gap);
+  align-items: center;
+}
+ol.kc-vendor-points {
+  margin: 0;
+  padding-left: 1.2em;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+ol.kc-vendor-points li { font-size: 0.46em; line-height: 1.4; }
+.kc-vendor-visual { text-align: center; }
+.kc-vendor-visual .kc-topo { width: 100%; max-height: 34vh; }
+.kc-vendor-visual img.kc-logo { width: 90px; height: 90px; margin-top: 0.4em; opacity: 0.9; }
+
+/* Slide 19 — takeaways, photograph-bait */
+.kc-takeaways {
+  list-style: none;
+  margin: 0.4em 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55em;
+  counter-reset: takeaway;
+}
+.kc-takeaways li {
+  font-size: 0.78em;
+  font-weight: 700;
+  line-height: 1.2;
+  display: flex;
+  gap: 0.5em;
+  align-items: baseline;
+}
+.kc-takeaways li::before {
+  counter-increment: takeaway;
+  content: counter(takeaway);
+  font-size: 1.1em;
+  font-weight: 800;
+  color: var(--kc-blue);
+  min-width: 1.3em;
+}
+
+/* Slide 20 — thank you / closing */
+.kc-thankyou { text-align: center; }
+.kc-thankyou .kc-ty-big {
+  font-size: 1.9em;
+  font-weight: 800;
+  line-height: 1.08;
+  margin: 0.1em 0 0.3em;
+}
+.kc-ty-body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  align-items: center;
+  justify-content: center;
+  text-align: left;
+  max-width: 42em;
+  margin: 0.4em auto;
+}
+.kc-ty-speaker {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.kc-ty-photo {
+  width: 130px; height: 130px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: top center;
+  border: 4px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 8px 24px rgba(6, 6, 45, 0.5);
+  flex-shrink: 0;
+}
+.kc-ty-info p { margin: 0.15em 0; font-size: 0.55em; line-height: 1.35; }
+.kc-ty-info .kc-ty-name { font-size: 0.72em; font-weight: 800; }
+.kc-ty-info .kc-ty-handles { font-size: 0.46em; opacity: 0.9; }
+.kc-ty-qr { text-align: center; }
+.kc-ty-qr img {
+  width: 440px; height: 440px;
+  border-radius: 8px;
+  background: #fff;
+  padding: 6px;
+}
+.kc-ty-qr .kc-ty-qr-lbl { display: block; font-size: 0.34em; max-width: 12em; margin: 0.3em auto 0; line-height: 1.3; opacity: 0.9; }
+.kc-ty-chapters { font-size: 0.5em; opacity: 0.92; margin-top: 0.4em; }
+
+/* ---------------------------------------------------------------------
+   Layout QA fixes (visual overflow / alignment)
+   --------------------------------------------------------------------- */
+/* Slide 2: vertically center content and keep the two columns inside the
+   padded content area; constrain the speaker photo so the grid never
+   grows taller than the slide. */
+.reveal .slides section.kc-center-section {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.kc-cols.kc-cols-mid { align-items: center; }
+.kc-photo-cell {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.kc-photo {
+  display: block;
+  width: 100%;
+  height: 560px;
+  max-height: 560px;
+  object-fit: cover;
+  object-position: top center;
+  border-radius: var(--kc-radius);
+}
+.kc-photo-name {
+  display: block;
+  text-align: center;
+  font-size: 0.5em;
+  font-weight: 700;
+  margin-top: 0.4em;
+  opacity: 0.85;
+}
+
+/* Slide 3: the hook fills the area between the top edge and the footer,
+   not the whole slide, so the footer can never be pushed off-canvas. */
+.reveal .slides section .kc-hook {
+  height: auto;
+  min-height: calc(100% - 2.2em);
+}
+
+/* =====================================================================
+   TEMPLATE LOOK — authentic KubeCon mosaic (heroes) + CSS accents
+   (mosaic art = Assets/tpl-mosaic.jpg, sampled palette yellow/red/blue)
+   ===================================================================== */
+
+/* --- Hero mosaic background (title / section / closing) --- */
+.reveal .slides section.kc-mosaic {
+  background-image: url("../Assets/tpl-mosaic.jpg");
+  background-size: cover;
+  background-position: center;
+}
+/* stronger scrim on hero so title text stays crisp over the busy mosaic */
+.reveal .slides section.kc-mosaic.bg-scrim::before {
+  background: linear-gradient(180deg,
+              rgba(6, 6, 45, 0.62) 0%,
+              rgba(6, 6, 45, 0.80) 100%);
+}
+
+/* --- Mosaic side-strip accent (impact slides): art hugs the right edge as a
+   child overlay (reveal paints solid blue via data-background-color; this div
+   sits above that layer inside the section) --- */
+.kc-strip-art {
+  position: absolute;
+  top: 0; right: 0; bottom: 0;
+  width: 24%;
+  z-index: 0;
+  pointer-events: none;
+  background-image: url("../Assets/tpl-mosaic-strip.jpg");
+  background-size: cover;
+  background-position: center;
+}
+.kc-strip-art::after {
+  /* soft fade so the strip blends into the blue content area */
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, var(--kc-blue) 0%, rgba(57,57,217,0) 45%);
+}
+
+/* --- CSS geometric corner accent (standard content) ---
+   Two small template-palette blocks in a corner echo the mosaic without
+   a busy photo behind the text. Purely decorative, pointer-events off. --- */
+.kc-accent-corner,
+.kc-accent-corner-tr {
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+  width: 132px;
+  height: 132px;
+}
+.kc-accent-corner { left: 0; bottom: 0; }
+.kc-accent-corner-tr { right: 0; top: 0; transform: rotate(180deg); }
+.kc-accent-corner::before,
+.kc-accent-corner::after,
+.kc-accent-corner-tr::before,
+.kc-accent-corner-tr::after {
+  content: "";
+  position: absolute;
+}
+/* yellow square + red bar, offset like the mosaic’s block motif */
+.kc-accent-corner::before,
+.kc-accent-corner-tr::before {
+  left: 0; bottom: 0;
+  width: 60px; height: 60px;
+  background: var(--kc-yellow);
+}
+.kc-accent-corner::after,
+.kc-accent-corner-tr::after {
+  left: 66px; bottom: 0;
+  width: 30px; height: 96px;
+  background: var(--kc-tpl-red);
+}
+/* keep real content above the accent WITHOUT clobbering positioned children
+   (pills/footer/strip use absolute positioning — only raise z-index, and only
+   promote static elements to relative so z-index applies) */
+.reveal .slides section > *:not(.kc-accent-corner):not(.kc-accent-corner-tr):not(.kc-pills):not(.kc-pills-corner):not(.kc-footer):not(.kc-strip-art):not(.kc-pending):not(.kc-boundary) {
+  position: relative;
+  z-index: 1;
+}
+
+/* --- Dense slides: solid blue + thin top accent bar + strong scrim tokens.
+   A slim 3-color bar across the top nods to the template while leaving the
+   whole canvas clean for diagrams / YAML / tables. --- */
+.reveal .slides section.kc-dense {
+  background: var(--kc-blue);
+}
+.reveal .slides section.kc-dense::after {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 8px;
+  z-index: 0;
+  background: linear-gradient(90deg,
+              var(--kc-yellow) 0%, var(--kc-yellow) 33%,
+              var(--kc-tpl-red) 33%, var(--kc-tpl-red) 66%,
+              var(--kc-blue-lt) 66%, var(--kc-blue-lt) 100%);
+}
+
+/* ===== Slide-fix CSS (batch) ===== */
+
+/* S5: taller cards + centered slide */
+.kc-center-section { display: flex; flex-direction: column; justify-content: center; }
+.kc-card { min-height: 220px; }
+
+/* S8: steps numbered badges */
+.kc-steps { list-style: none; counter-reset: step; padding: 0; }
+.kc-steps > li { counter-increment: step; position: relative; padding-left: 3em; margin-bottom: 0.8em; font-size: 0.62em; line-height: 1.5; }
+.kc-steps > li::before {
+  content: counter(step);
+  position: absolute; left: 0; top: -0.1em;
+  width: 2em; height: 2em;
+  background: var(--kc-yellow); color: var(--kc-navy);
+  border-radius: 50%; font-size: 0.9em; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* S10: YAML callout badge */
+.kc-yaml-callout {
+  display: inline-block;
+  background: rgba(255,225,0,0.15);
+  border: 1px solid var(--kc-yellow);
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 0.5em; font-weight: 700;
+  margin-top: 0.3em;
+}
+
+/* S11: larger table */
+.kc-table-lg { font-size: 0.58em !important; width: 100%; }
+.kc-table-lg th, .kc-table-lg td { padding: 10px 14px !important; }
+.kc-table-lg th { font-size: 0.85em; }
+
+/* S19: takeaway boxes */
+.kc-takeaways { list-style: none; padding: 0; counter-reset: tk; }
+.kc-takeaways > li {
+  counter-increment: tk;
+  display: flex; align-items: flex-start; gap: 16px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: var(--kc-radius);
+  padding: 20px 24px; margin-bottom: 16px;
+  font-size: 0.6em; line-height: 1.4;
+}
+.kc-takeaways > li::before {
+  content: counter(tk);
+  flex-shrink: 0;
+  width: 2.2em; height: 2.2em;
+  background: var(--kc-yellow); color: var(--kc-navy);
+  border-radius: 50%; font-size: 0.8em; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* ===== Slide-specific visual fixes ===== */
+
+/* S5: card fragment transitions — clean fade-up */
+.kc-card.fragment { transition: all 0.5s ease; }
+.kc-card.fragment.visible { opacity: 1; transform: translateY(0); }
+.kc-card.fragment:not(.visible) { opacity: 0; transform: translateY(30px); }
+
+/* S17: scar tip boxes to fill bottom space */
+.kc-scar-tips {
+  display: flex; gap: 20px; justify-content: center; margin: 1em 0 0.5em;
+}
+.kc-scar-tip {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(255,225,0,0.1); border: 1px solid rgba(255,225,0,0.3);
+  border-radius: 8px; padding: 10px 16px; font-size: 0.46em; font-weight: 600;
+}
+.kc-tip-icon { font-size: 1.3em; }
+
+/* S18: larger vendor points */
+.kc-vendor-lg li { font-size: 0.58em !important; line-height: 1.5 !important; padding: 12px 16px !important; }
+.kc-vendor-lg { gap: 10px; }
+
+/* S20: second speaker photo */
+.kc-ty-photo2 { display: inline-block; }
+
+/* S12: center slide 12 */
+.kc-center-section { display: flex; flex-direction: column; justify-content: center; }
+
+/* S16: bigger result cards */
+.kc-result-card .kc-result-num { font-size: 1.6em !important; }
+.kc-result-card .kc-result-lbl { font-size: 0.5em !important; }
+.kc-result-card { padding: 24px 22px; min-width: 200px; }
+.kc-stat-big { font-size: 3.8em !important; }
+
+/* S14: bigger card labels */
+.kc-card .kc-card-lbl { font-size: 0.62em; }
