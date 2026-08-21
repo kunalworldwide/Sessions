@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Who Owns Your Code? Data Sovereignty in the Age of AI Coding Agents | Kunal Das</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+<style>
+/* === CSS PROPERTIES — KIMCHI BRAND === */
+:root {
+    --chili-red: #F4572E; --chili-red-dim: rgba(244,87,46,0.15);
+    --kimchi-lime: #BBE33B; --kimchi-lime-dim: rgba(187,227,59,0.15);
+    --terminal-black: #08080C; --panel-charcoal: #12121A;
+    --panel-steel: #1E1E28; --hairline: #2A2A38;
+    --off-white: #F0F0F5; --muted-gray: #8888A0; --dim-gray: #4A4A5C;
+    --savings-green: #28C840; --alert-amber: #FEBC2E; --burn-red: #FF5F57;
+    --sovereignty-blue: #3B82F6; --sovereignty-blue-dim: rgba(59,130,246,0.15);
+    --font-display: 'Space Grotesk', system-ui, sans-serif;
+    --font-body: 'Space Grotesk', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --ease-expo: cubic-bezier(0.16,1,0.3,1);
+    --ease-back: cubic-bezier(0.34,1.56,0.64,1);
+}
+
+/* === BASE === */
+* { margin:0; padding:0; box-sizing:border-box; }
+html,body { width:100%; height:100%; margin:0; overflow:hidden; background:var(--terminal-black); font-family:var(--font-body); color:var(--off-white); cursor:none; }
+.deck-viewport { position:fixed; inset:0; overflow:hidden; background:var(--terminal-black); }
+.deck-stage { position:absolute; left:0; top:0; width:1920px; height:1080px; overflow:hidden; transform-origin:0 0; background:var(--terminal-black); }
+.slide { position:absolute; inset:0; width:1920px; height:1080px; overflow:hidden; display:block; visibility:hidden; opacity:0; pointer-events:none; background:var(--terminal-black); }
+.slide.active,.slide.visible { visibility:visible; opacity:1; pointer-events:auto; z-index:1; }
+img,video,canvas,svg { max-width:100%; max-height:100%; }
+
+@media print {
+    html,body { width:1920px; height:auto; overflow:visible; background:#fff; cursor:auto; }
+    .deck-viewport { position:static; overflow:visible; background:#fff; }
+    .deck-stage { position:static; width:auto; height:auto; transform:none !important; background:none; }
+    .slide { position:relative; display:block !important; visibility:visible !important; opacity:1 !important; pointer-events:auto !important; width:1920px; height:1080px; break-after:page; page-break-after:always; }
+    .slide:last-child { break-after:auto; page-break-after:auto; }
+    .deck-controls,.custom-cursor,.cursor-dot,.page-indicator { display:none !important; }
+}
+@media (prefers-reduced-motion:reduce) { *,*::before,*::after { animation-duration:0.01ms !important; transition-duration:0.2s !important; } }
+
+/* === CUSTOM CURSOR === */
+.custom-cursor { position:fixed; width:24px; height:24px; border:2px solid var(--chili-red); border-radius:50%; pointer-events:none; z-index:10000; transform:translate(-50%,-50%); transition:width 0.2s var(--ease-expo),height 0.2s var(--ease-expo),border-color 0.2s,background 0.2s; box-shadow:0 0 20px var(--chili-red),inset 0 0 10px rgba(244,87,46,0.2); mix-blend-mode:screen; }
+.cursor-dot { position:fixed; width:6px; height:6px; background:var(--kimchi-lime); border-radius:50%; pointer-events:none; z-index:10001; transform:translate(-50%,-50%); box-shadow:0 0 12px var(--kimchi-lime); }
+.custom-cursor.hover { width:56px; height:56px; border-color:var(--kimchi-lime); background:rgba(187,227,59,0.1); box-shadow:0 0 40px var(--kimchi-lime); }
+
+/* === PAGE INDICATOR === */
+.page-indicator { position:fixed; right:28px; top:50%; transform:translateY(-50%); z-index:1000; display:flex; flex-direction:column; gap:8px; align-items:center; }
+.page-dot { width:8px; height:8px; border-radius:50%; border:1px solid var(--dim-gray); background:transparent; cursor:none; transition:all 0.4s var(--ease-back); }
+.page-dot:hover { border-color:var(--chili-red); transform:scale(1.4); }
+.page-dot.active { width:8px; height:36px; border-radius:4px; background:linear-gradient(180deg,var(--chili-red),var(--kimchi-lime)); border-color:transparent; box-shadow:0 0 16px var(--chili-red); animation:dotPulse 2s ease-in-out infinite; }
+.page-dot.completed { background:var(--kimchi-lime); border-color:transparent; box-shadow:0 0 6px var(--kimchi-lime); }
+@keyframes dotPulse { 0%,100%{box-shadow:0 0 16px var(--chili-red);} 50%{box-shadow:0 0 28px var(--chili-red),0 0 48px rgba(244,87,46,0.3);} }
+
+/* === SLIDE CHROME === */
+.slide-inner { position:relative; width:100%; height:100%; padding:80px; display:flex; flex-direction:column; }
+.section-tag { position:absolute; top:48px; left:80px; font-family:var(--font-mono); font-size:13px; letter-spacing:0.2em; text-transform:uppercase; padding:8px 18px; border:1px solid var(--hairline); border-radius:4px; background:rgba(18,18,26,0.8); backdrop-filter:blur(10px); display:flex; align-items:center; gap:10px; }
+.section-tag::before { content:""; width:8px; height:8px; border-radius:50%; display:inline-block; }
+.section-tag.problem { color:var(--burn-red); border-color:rgba(255,95,87,0.4); } .section-tag.problem::before { background:var(--burn-red); box-shadow:0 0 10px var(--burn-red); }
+.section-tag.product { color:var(--chili-red); border-color:rgba(244,87,46,0.4); } .section-tag.product::before { background:var(--chili-red); box-shadow:0 0 10px var(--chili-red); }
+.section-tag.how { color:var(--kimchi-lime); border-color:rgba(187,227,59,0.4); } .section-tag.how::before { background:var(--kimchi-lime); box-shadow:0 0 10px var(--kimchi-lime); }
+.section-tag.governance { color:var(--sovereignty-blue); border-color:rgba(59,130,246,0.4); } .section-tag.governance::before { background:var(--sovereignty-blue); box-shadow:0 0 10px var(--sovereignty-blue); }
+.section-tag.proof { color:var(--savings-green); border-color:rgba(40,200,64,0.4); } .section-tag.proof::before { background:var(--savings-green); box-shadow:0 0 10px var(--savings-green); }
+.source-cite { position:absolute; bottom:40px; left:80px; font-family:var(--font-mono); font-size:14px; color:var(--muted-gray); }
+.source-cite::before { content:"\25B8 "; color:var(--chili-red); }
+
+/* === TYPOGRAPHY === */
+.slide-title { font-family:var(--font-display); font-size:60px; line-height:1.15; letter-spacing:-0.02em; font-weight:700; color:var(--off-white); }
+.slide-subtitle { font-size:24px; line-height:1.5; color:var(--muted-gray); font-weight:400; max-width:1100px; }
+.h2 { font-family:var(--font-display); font-size:44px; line-height:1.15; font-weight:700; }
+.h3 { font-size:26px; font-weight:600; line-height:1.25; }
+.body-text { font-size:20px; line-height:1.6; color:var(--off-white); }
+.body-lg { font-size:22px; line-height:1.5; color:var(--off-white); }
+.caption { font-size:15px; color:var(--muted-gray); line-height:1.4; }
+.mono { font-family:var(--font-mono); }
+.accent-red { color:var(--chili-red); } .accent-lime { color:var(--kimchi-lime); } .accent-green { color:var(--savings-green); } .accent-amber { color:var(--alert-amber); } .accent-burn { color:var(--burn-red); } .accent-blue { color:var(--sovereignty-blue); }
+
+/* === HERO NUMBERS === */
+.hero-number { font-family:var(--font-display); font-size:100px; line-height:1.1; letter-spacing:-0.02em; font-weight:700; font-variant-numeric:tabular-nums; }
+.big-stat { font-family:var(--font-display); font-size:64px; line-height:1.1; font-weight:700; font-variant-numeric:tabular-nums; }
+
+/* === CARDS === */
+.card { background:rgba(18,18,26,0.7); backdrop-filter:blur(12px); border:1px solid var(--hairline); border-radius:12px; padding:32px; }
+.card-accent-red { border-left:3px solid var(--chili-red); } .card-accent-lime { border-left:3px solid var(--kimchi-lime); } .card-accent-burn { border-left:3px solid var(--burn-red); } .card-accent-amber { border-left:3px solid var(--alert-amber); } .card-accent-green { border-left:3px solid var(--savings-green); } .card-accent-blue { border-left:3px solid var(--sovereignty-blue); }
+
+/* === TERMINAL === */
+.terminal { background:var(--panel-charcoal); border:1px solid var(--hairline); border-radius:12px; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,0.5); }
+.terminal-titlebar { height:40px; background:var(--panel-steel); display:flex; align-items:center; padding:0 16px; gap:8px; border-bottom:1px solid var(--hairline); }
+.terminal-dot { width:12px; height:12px; border-radius:50%; }
+.terminal-dot.red { background:var(--burn-red); } .terminal-dot.yellow { background:var(--alert-amber); } .terminal-dot.green { background:var(--savings-green); }
+.terminal-title { flex:1; text-align:center; font-family:var(--font-mono); font-size:14px; color:var(--muted-gray); }
+.terminal-body { padding:24px; font-family:var(--font-mono); font-size:18px; line-height:1.7; color:var(--off-white); }
+.terminal-body .prompt { color:var(--chili-red); } .terminal-body .cmd { color:var(--off-white); } .terminal-body .ok { color:var(--kimchi-lime); } .terminal-body .check { color:var(--savings-green); } .terminal-body .pending { color:var(--muted-gray); } .terminal-body .warn { color:var(--alert-amber); } .terminal-body .dim { color:var(--dim-gray); }
+.cursor::after { content:"\258B"; color:var(--chili-red); animation:blink 1s steps(1) infinite; }
+@keyframes blink { 50%{opacity:0;} }
+
+/* === ANIMATIONS === */
+.reveal { opacity:0; transform:translateY(30px); transition:opacity 0.6s var(--ease-expo),transform 0.6s var(--ease-expo); }
+.slide.visible .reveal { opacity:1; transform:translateY(0); }
+.reveal-scale { opacity:0; transform:scale(0.9); transition:opacity 0.7s var(--ease-back),transform 0.7s var(--ease-back); }
+.slide.visible .reveal-scale { opacity:1; transform:scale(1); }
+.reveal-left { opacity:0; transform:translateX(-60px); transition:opacity 0.7s var(--ease-expo),transform 0.7s var(--ease-expo); }
+.slide.visible .reveal-left { opacity:1; transform:translateX(0); }
+.reveal-right { opacity:0; transform:translateX(60px); transition:opacity 0.7s var(--ease-expo),transform 0.7s var(--ease-expo); }
+.slide.visible .reveal-right { opacity:1; transform:translateX(0); }
+.slide.visible .reveal:nth-child(1) { transition-delay:0.1s; } .slide.visible .reveal:nth-child(2) { transition-delay:0.2s; } .slide.visible .reveal:nth-child(3) { transition-delay:0.3s; } .slide.visible .reveal:nth-child(4) { transition-delay:0.4s; } .slide.visible .reveal:nth-child(5) { transition-delay:0.5s; } .slide.visible .reveal:nth-child(6) { transition-delay:0.6s; }
+@keyframes float { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-12px);} }
+.floating { animation:float 4s ease-in-out infinite; }
+@keyframes glowPulse { 0%,100%{box-shadow:0 0 20px var(--chili-red),0 0 40px rgba(244,87,46,0.2);} 50%{box-shadow:0 0 40px var(--chili-red),0 0 80px rgba(244,87,46,0.4);} }
+.glow-pulse { animation:glowPulse 3s ease-in-out infinite; }
+@keyframes glowPulseBlue { 0%,100%{box-shadow:0 0 20px var(--sovereignty-blue),0 0 40px rgba(59,130,246,0.2);} 50%{box-shadow:0 0 40px var(--sovereignty-blue),0 0 80px rgba(59,130,246,0.4);} }
+.glow-pulse-blue { animation:glowPulseBlue 3s ease-in-out infinite; }
+
+/* === DECK CONTROLS === */
+.deck-controls { position:fixed; left:50%; bottom:20px; transform:translateX(-50%); z-index:1000; display:flex; align-items:center; gap:16px; background:rgba(8,8,12,0.85); backdrop-filter:blur(12px); border:1px solid var(--hairline); border-radius:100px; padding:6px 16px; font-family:var(--font-mono); font-size:13px; color:var(--muted-gray); }
+.deck-controls button { background:none; border:none; color:var(--off-white); cursor:none; font-size:16px; padding:4px 10px; border-radius:4px; transition:all 0.2s; }
+.deck-controls button:hover { background:var(--chili-red); color:var(--terminal-black); }
+
+/* === DATA FLOW DIAGRAM === */
+.flow-diagram { display:flex; align-items:center; justify-content:center; gap:0; margin-top:40px; }
+.flow-node { display:flex; flex-direction:column; align-items:center; gap:12px; min-width:200px; z-index:2; }
+.flow-node .flow-icon { width:100px; height:100px; border-radius:16px; background:rgba(18,18,26,0.7); backdrop-filter:blur(8px); border:1px solid var(--hairline); display:flex; align-items:center; justify-content:center; font-size:44px; transition:all 0.4s var(--ease-back); }
+.flow-node:hover .flow-icon { border-color:var(--chili-red); box-shadow:0 0 30px rgba(244,87,46,0.2); transform:translateY(-8px); }
+.flow-node .flow-label { font-family:var(--font-mono); font-size:16px; color:var(--off-white); text-align:center; font-weight:600; }
+.flow-node .flow-sub { font-family:var(--font-mono); font-size:12px; color:var(--muted-gray); text-align:center; }
+.flow-arrow { font-size:40px; color:var(--dim-gray); margin:0 20px; margin-top:30px; z-index:1; }
+.flow-arrow.leaking { color:var(--burn-red); animation:leakPulse 1.5s ease-in-out infinite; }
+@keyframes leakPulse { 0%,100%{opacity:0.3;} 50%{opacity:1;} }
+
+/* === THREAT CARDS === */
+.threat-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:24px; margin-top:40px; }
+.threat-card { background:rgba(18,18,26,0.7); backdrop-filter:blur(12px); border:1px solid var(--hairline); border-left:3px solid var(--burn-red); border-radius:12px; padding:32px 28px; transition:all 0.3s var(--ease-back); position:relative; overflow:hidden; }
+.threat-card:hover { border-color:var(--burn-red); transform:translateY(-6px); box-shadow:0 10px 40px rgba(255,95,87,0.15); }
+.threat-card .threat-icon { font-size:36px; margin-bottom:16px; }
+.threat-card .threat-num { font-family:var(--font-mono); font-size:12px; color:var(--burn-red); letter-spacing:0.1em; }
+.threat-card .threat-title { font-size:22px; font-weight:700; color:var(--off-white); margin-top:8px; margin-bottom:12px; line-height:1.2; }
+.threat-card .threat-desc { font-size:15px; color:var(--muted-gray); line-height:1.5; }
+
+/* === SOVEREIGNTY PILLARS === */
+.pillar-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:24px; margin-top:48px; }
+.pillar-card { background:rgba(18,18,26,0.7); backdrop-filter:blur(12px); border:1px solid var(--hairline); border-left:3px solid var(--sovereignty-blue); border-radius:12px; padding:32px 24px; display:flex; flex-direction:column; gap:14px; transition:all 0.3s var(--ease-back); position:relative; overflow:hidden; }
+.pillar-card:hover { border-color:var(--sovereignty-blue); transform:translateY(-6px); box-shadow:0 10px 40px rgba(59,130,246,0.15); }
+.pillar-card .pillar-icon { font-size:36px; line-height:1; margin-bottom:4px; }
+.pillar-card .pillar-num { font-family:var(--font-mono); font-size:12px; color:var(--sovereignty-blue); letter-spacing:0.1em; }
+.pillar-card .pillar-title { font-size:19px; font-weight:700; color:var(--off-white); line-height:1.2; }
+.pillar-card .pillar-desc { font-size:14px; color:var(--muted-gray); line-height:1.5; }
+
+/* === COMPARISON TABLE === */
+.compare-table { display:grid; grid-template-columns:1fr 1fr; gap:0; border:1px solid var(--hairline); border-radius:12px; overflow:hidden; background:rgba(18,18,26,0.5); margin-top:40px; }
+.compare-header { padding:28px; background:var(--panel-steel); border-bottom:1px solid var(--hairline); }
+.compare-header .label { font-family:var(--font-mono); font-size:13px; text-transform:uppercase; letter-spacing:0.1em; color:var(--muted-gray); margin-bottom:12px; }
+.compare-header .h3 { font-size:24px; }
+.compare-row { padding:28px; border-right:1px solid var(--hairline); border-bottom:1px solid var(--hairline); }
+.compare-row:nth-child(2n) { border-right:none; }
+.compare-row:nth-last-child(-n+2) { border-bottom:none; }
+.compare-row .row-label { font-family:var(--font-mono); font-size:13px; text-transform:uppercase; letter-spacing:0.1em; color:var(--muted-gray); margin-bottom:8px; }
+.compare-row .row-val { font-size:17px; color:var(--off-white); }
+.compare-row .row-val .bad { color:var(--burn-red); font-weight:600; }
+.compare-row .row-val .good { color:var(--kimchi-lime); font-weight:600; }
+
+/* === VPC DIAGRAM === */
+.vpc-diagram { position:relative; width:100%; height:520px; margin-top:24px; }
+.vpc-perimeter { position:absolute; left:5%; top:60px; right:5%; bottom:0; border:2px dashed var(--sovereignty-blue); border-radius:20px; background:var(--sovereignty-blue-dim); }
+.vpc-label { position:absolute; top:-14px; left:24px; background:var(--terminal-black); padding:4px 16px; font-family:var(--font-mono); font-size:14px; color:var(--sovereignty-blue); border:1px solid rgba(59,130,246,0.4); border-radius:4px; }
+.vpc-box { position:absolute; background:rgba(18,18,26,0.8); backdrop-filter:blur(8px); border:1px solid var(--hairline); border-radius:10px; padding:18px 22px; text-align:center; z-index:2; transition:all 0.3s; }
+.vpc-box:hover { border-color:var(--sovereignty-blue); box-shadow:0 0 20px rgba(59,130,246,0.3); }
+.vpc-box .vb-icon { font-size:28px; margin-bottom:8px; }
+.vpc-box .vb-title { font-size:16px; font-weight:600; color:var(--off-white); }
+.vpc-box .vb-sub { font-family:var(--font-mono); font-size:12px; color:var(--muted-gray); margin-top:4px; }
+.vpc-external { position:absolute; top:0; background:rgba(18,18,26,0.8); border:1px solid var(--hairline); border-radius:10px; padding:14px 20px; text-align:center; z-index:2; }
+.vpc-external .vb-icon { font-size:24px; }
+.vpc-external .vb-title { font-size:15px; font-weight:600; color:var(--muted-gray); }
+
+/* === COMPLIANCE BADGES === */
+.compliance-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:24px; margin-top:40px; }
+
+/* === SPEECH BUBBLES === */
+.bubble-grid { display:grid; grid-template-columns:1fr 1fr; gap:40px; margin-top:40px; }
+.speech-bubble { background:rgba(18,18,26,0.7); backdrop-filter:blur(12px); border:1px solid var(--hairline); border-radius:20px; padding:36px; position:relative; }
+.speech-bubble .quote { font-size:21px; line-height:1.5; color:var(--off-white); margin-bottom:20px; }
+.speech-bubble .quote .highlight { color:var(--kimchi-lime); font-weight:700; }
+.speech-bubble .quote .highlight-blue { color:var(--sovereignty-blue); font-weight:700; }
+.speech-bubble .quote .highlight-red { color:var(--chili-red); font-weight:700; }
+.speech-bubble .attribution { font-family:var(--font-mono); font-size:15px; color:var(--muted-gray); }
+.speech-bubble .stat-bubble { font-family:var(--font-display); font-size:60px; font-weight:700; line-height:1; margin-bottom:12px; }
+
+/* === PRICING === */
+.pricing-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:24px; margin-top:48px; }
+.pricing-card { background:rgba(18,18,26,0.7); backdrop-filter:blur(12px); border:1px solid var(--hairline); border-radius:12px; padding:40px 28px; display:flex; flex-direction:column; gap:20px; position:relative; transition:transform 0.3s var(--ease-back),border-color 0.3s; }
+.pricing-card:hover { transform:translateY(-8px); }
+.pricing-card.popular { border-color:var(--kimchi-lime); box-shadow:0 0 30px rgba(187,227,59,0.12); }
+.popular-tag { position:absolute; top:-12px; left:50%; transform:translateX(-50%); background:var(--kimchi-lime); color:var(--terminal-black); font-family:var(--font-mono); font-size:11px; font-weight:700; padding:4px 14px; border-radius:100px; text-transform:uppercase; letter-spacing:0.1em; }
+.pricing-card .tier-name { font-family:var(--font-mono); font-size:14px; text-transform:uppercase; letter-spacing:0.1em; color:var(--muted-gray); }
+.pricing-card .price { font-family:var(--font-display); font-size:52px; line-height:1; font-weight:700; }
+.pricing-card .price .per { font-size:18px; color:var(--muted-gray); font-weight:400; }
+.pricing-card .features { list-style:none; font-size:16px; color:var(--off-white); line-height:2; }
+.pricing-card .features li::before { content:"\25B8 "; color:var(--chili-red); }
+
+/* === CHECKLIST === */
+.checklist { display:flex; flex-direction:column; gap:16px; margin-top:32px; }
+.check-item { display:flex; align-items:flex-start; gap:16px; padding:20px 24px; background:rgba(18,18,26,0.7); backdrop-filter:blur(8px); border:1px solid var(--hairline); border-left:3px solid var(--kimchi-lime); border-radius:12px; transition:all 0.3s var(--ease-back); }
+.check-item:hover { border-color:var(--kimchi-lime); transform:translateX(8px); }
+.check-item .check-icon { font-size:24px; color:var(--kimchi-lime); flex-shrink:0; margin-top:2px; }
+.check-item .check-text { font-size:18px; color:var(--off-white); line-height:1.5; }
+.check-item .check-text strong { color:var(--kimchi-lime); }
+
+/* === SPLIT LAYOUT === */
+.split-layout { display:grid; grid-template-columns:1fr 1fr; gap:48px; align-items:center; height:calc(100% - 160px); }
+.split-layout > div { min-width:0; display:flex; flex-direction:column; justify-content:center; }
+.screenshot-frame { border:1px solid var(--hairline); border-radius:12px; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,0.5); }
+.screenshot-frame img { width:100%; height:auto; display:block; }
+
+/* === SLIDE 1 — TITLE === */
+.title-slide { background:var(--terminal-black); background-image:radial-gradient(ellipse at 70% 30%,rgba(244,87,46,0.12) 0%,transparent 50%),radial-gradient(ellipse at 30% 70%,rgba(59,130,246,0.08) 0%,transparent 50%); }
+.title-slide .slide-inner { justify-content:center; align-items:center; text-align:center; }
+.title-logo { width:90px; height:90px; margin-bottom:40px; filter:drop-shadow(0 0 20px rgba(244,87,46,0.4)); }
+.title-headline { font-family:var(--font-display); font-size:64px; line-height:1.1; letter-spacing:-0.02em; margin-bottom:24px; font-weight:700; max-width:1400px; background:linear-gradient(135deg,var(--off-white) 0%,var(--off-white) 60%,var(--sovereignty-blue) 100%); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+.title-subtitle { font-size:24px; color:var(--muted-gray); margin-bottom:48px; max-width:900px; line-height:1.4; }
+.title-meta { display:flex; gap:48px; align-items:center; font-family:var(--font-mono); font-size:16px; color:var(--muted-gray); }
+.title-meta .divider { width:1px; height:24px; background:var(--hairline); }
+.title-event { color:var(--kimchi-lime); font-weight:600; }
+.title-speaker { color:var(--chili-red); font-weight:600; }
+
+/* === SLIDE 19 — Thank You === */
+.thanks-slide { background:var(--terminal-black); background-image:radial-gradient(ellipse at 50% 50%,rgba(244,87,46,0.1) 0%,transparent 60%); }
+.thanks-slide .slide-inner { justify-content:center; align-items:center; text-align:center; }
+.thanks-logo { width:80px; height:80px; margin-bottom:32px; filter:drop-shadow(0 0 16px rgba(244,87,46,0.4)); }
+.thanks-headline { font-family:var(--font-display); font-size:76px; letter-spacing:-0.02em; margin-bottom:20px; font-weight:700; background:linear-gradient(135deg,var(--off-white),var(--kimchi-lime)); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+.thanks-quote { font-size:24px; color:var(--off-white); font-style:italic; max-width:700px; margin-bottom:12px; line-height:1.4; }
+.thanks-attribution { font-family:var(--font-mono); font-size:15px; color:var(--chili-red); margin-bottom:48px; }
+.thanks-actions { display:flex; gap:56px; align-items:center; margin-top:20px; }
+.qr-container { display:flex; flex-direction:column; align-items:center; gap:12px; }
+.qr-container img { width:400px; height:400px; border-radius:20px; border:2px solid var(--hairline); background:white; padding:20px; }
+.qr-container .qr-label { font-family:var(--font-mono); font-size:18px; color:var(--muted-gray); }
+.qr-container .connect-text { font-family:var(--font-display); font-size:24px; color:var(--kimchi-lime); font-weight:600; }
+.star-cta { display:flex; flex-direction:column; align-items:center; gap:12px; }
+.star-cta .star-btn { display:flex; align-items:center; gap:10px; padding:16px 32px; background:rgba(18,18,26,0.7); border:1px solid var(--hairline); border-radius:100px; font-family:var(--font-mono); font-size:18px; color:var(--off-white); text-decoration:none; transition:all 0.3s; }
+.star-cta .star-btn:hover { border-color:var(--kimchi-lime); color:var(--kimchi-lime); box-shadow:0 0 30px rgba(187,227,59,0.2); }
+.star-cta .star-icon { font-size:22px; }
+.star-cta .star-label { font-family:var(--font-mono); font-size:14px; color:var(--muted-gray); }
+</style>
+</head>
+<body>
+<div class="deck-viewport">
+<main class="deck-stage" id="deckStage">
+
+<!-- SLIDE 1 — TITLE -->
+<section class="slide title-slide" data-slide="0">
+    <div class="slide-inner">
+        <img src="assets/logo200x200-trasnparent.png" alt="Kimchi" class="title-logo reveal-scale floating">
+        <h1 class="title-headline reveal">Who Owns Your Code?<br>Data Sovereignty in the Age of AI Coding Agents</h1>
+        <p class="title-subtitle reveal">Your codebase is being read, indexed, and learned from by AI tools you didn't build. Where does it go? Who controls it? And what happens when it leaves your perimeter?</p>
+        <div class="title-meta reveal">
+            <span class="title-event">Cloud-Native &amp; AI Unlocked: Bengaluru Edition</span>
+            <span class="divider"></span>
+            <span class="title-speaker">Kunal Das</span>
+            <span class="divider"></span>
+            <span class="mono">Developer Advocate, Kimchi</span>
+        </div>
+        <div class="title-meta reveal" style="margin-top:20px;font-size:14px;">
+            <span class="mono" style="color:var(--sovereignty-blue);">Sat, Aug 22, 2026 \u00b7 Koramangala, Bengaluru</span>
+        </div>
+    </div>
+</section>
+
+<!-- SLIDE 2 — THE QUESTION -->
+<section class="slide" data-slide="1">
+    <div class="section-tag problem">The Question</div>
+    <div class="slide-inner">
+        <h2 class="slide-title reveal">Your code is already out there.</h2>
+        <p class="slide-subtitle reveal" style="margin-top:16px;">Every time an AI coding agent reads your repository, your code travels through infrastructure you don't control.</p>
+        <div class="flow-diagram reveal-scale">
+            <div class="flow-node">
+                <div class="flow-icon" style="border-color:var(--chili-red);">\uD83D\uDCBB</div>
+                <div class="flow-label">Your Codebase</div>
+                <div class="flow-sub">proprietary IP</div>
+            </div>
+            <div class="flow-arrow leaking">\u2192</div>
+            <div class="flow-node">
+                <div class="flow-icon" style="border-color:var(--burn-red);">\uD83E\uDD16</div>
+                <div class="flow-label">AI Agent</div>
+                <div class="flow-sub">reads, indexes, learns</div>
+            </div>
+            <div class="flow-arrow leaking">\u2192</div>
+            <div class="flow-node">
+                <div class="flow-icon" style="border-color:var(--burn-red);">\u2601\uFE0F</div>
+                <div class="flow-label">Vendor Cloud</div>
+                <div class="flow-sub">unknown region, unknown retention</div>
+            </div>
+            <div class="flow-arrow leaking">\u2192</div>
+            <div class="flow-node">
+                <div class="flow-icon" style="border-color:var(--burn-red);">\uD83C\uDF10</div>
+                <div class="flow-label">Training Data?</div>
+                <div class="flow-sub">you hope not</div>
+            </div>
+        </div>
+        <div class="card reveal" style="margin-top:48px;border-left:3px solid var(--burn-red);max-width:1400px;">
+            <p class="body-lg">The question isn't <span class="accent-burn" style="font-weight:700;">"should we use AI coding agents?"</span> \u2014 that ship has sailed. The question is <span class="accent-lime" style="font-weight:700;">"who owns the data that flows through them?"</span></p>
+        </div>
+    </div>
+    <div class="source-cite">kunaldas.net \u00b7 kimchi.dev</div>
+</section>
+
+<!-- SLIDE 3 — THE DATA EXPOSURE SURFACE -->
+<section class="slide" data-slide="2">
+    <div class="section-tag problem">The Problem</div>
+    <div class="slide-inner">
+        <h2 class="slide-title reveal">Three surfaces where your code leaks.</h2>
+        <div class="threat-grid">
+            <div class="threat-card reveal-scale">
+                <div class="threat-icon">\uD83D\uDCC4</div>
+                <div class="threat-num">SURFACE 01</div>
+                <div class="threat-title">Source Code in Transit</div>
+                <div class="threat-desc">Every file the agent reads \u2014 schemas, configs, secrets in comments, internal APIs \u2014 travels to the model provider's inference endpoint. Often across borders.</div>
+            </div>
+            <div class="threat-card reveal-scale">
+                <div class="threat-icon">\uD83E\uDDE0</div>
+                <div class="threat-num">SURFACE 02</div>
+                <div class="threat-title">Context as Training Fuel</div>
+                <div class="threat-desc">Your codebase, architecture patterns, and business logic become context. Whether it's retained, logged, or used for training depends entirely on the vendor's terms \u2014 which change.</div>
+            </div>
+            <div class="threat-card reveal-scale">
+                <div class="threat-icon">\uD83D\uDD12</div>
+                <div class="threat-num">SURFACE 03</div>
+                <div class="threat-title">Generated Code Provenance</div>
+                <div class="threat-desc">When an agent writes code, who owns the output? Is it derived from your proprietary patterns? Is it license-clean? Can you prove it in an audit?</div>
+            </div>
+        </div>
+        <div class="card reveal" style="margin-top:40px;border-left:3px solid var(--alert-amber);max-width:1400px;">
+            <div class="mono accent-amber" style="font-size:13px;">REGULATORY REALITY</div>
+            <p class="body-text" style="margin-top:8px;">GDPR, DPDP Act 2023 (India), CCPA, and EU AI Act all impose data residency and processing obligations. <span class="accent-amber" style="font-weight:700;">"The vendor said it was fine" is not a compliance strategy.</span></p>
+        </div>
+    </div>
+    <div class="source-cite">GDPR Art. 44-49 \u00b7 DPDP Act 2023 \u00b7 EU AI Act 2024</div>
+</section>
+
+<!-- SLIDE 4 — THE VENDOR TRANSPARENCY GAP -->
+<section class="slide" data-slide="3">
+    <div class="section-tag problem">The Problem</div>
+    <div class="slide-inner">
+        <h2 class="slide-title reveal">What you don't know can hurt you.</h2>
+        <p class="slide-subtitle reveal" style="margin-top:16px;">Most AI coding tools don't tell you where your data goes. Here's what the fine print usually hides.</p>
+        <div class="compare-table reveal">
+            <div class="compare-header">
+                <div class="label">Typical AI Coding Tool</div>
+                <div class="h3 accent-burn">Opaque by default</div>
+            </div>
+            <div class="compare-header">
+                <div class="label">What You Actually Need</div>
+                <div class="h3 accent-lime">Sovereign by design</div>
+            </div>
+            <div class="compare-row">
+                <div class="row-label">Data residency</div>
+                <div class="row-val"><span class="bad">Unknown region</span> \u2014 vendor chooses the inference region</div>
+            </div>
+            <div class="compare-row">
+                <div class="row-label">Data residency</div>
+                <div class="row-val"><span class="good">Your VPC, your region</span> \u2014 data never leaves your perimeter</div>
+            </div>
+            <div class="compare-row">
+                <div class="row-label">Retention policy</div>
+                <div class="row-val"><span class="bad">30-day default</span> \u2014 opt-out buried in settings</div>
+            </div>
+            <div class="compare-row">
+                <div class="row-label">Retention policy</div>
+                <div class="row-val"><span class="good">Zero retention</span> \u2014 no prompts, no outputs, no logs stored</div>
+            </div>
+            <div class="compare-row">
+                <div class="row-label">Training on your data</div>
+                <div class="row-val"><span class="bad">"May use" clauses</span> \u2014 terms updated retroactively</div>
+            </div>
+            <div class="compare-row">
+                <div class="row-label">Training on your data</div>
+                <div class="row-val"><span class="good">Contractually prohibited</span> \u2014 enforced by architecture</div>
+            </div>
+            <div class="compare-row">
+                <div class="row-label">Audit trail</div>
+                <div class="row-val"><span class="bad">Trust us</span> \u2014 no per-request provenance</div>
+            </div>
+            <div class="compare-row">
+                <div class="row-label">Audit trail</div>
+                <div class="row-val"><span class="good">Phase-tagged</span> \u2014 every LLM call logged with purpose</div>
+            </div>
+        </div>
+    </div>
+    <div class="source-cite">Survey of AI coding tool Terms of Service, Aug 2026</div>
+</section>
+
+<!-- SLIDE 5 — REAL CONSEQUENCES -->
+<section class="slide" data-slide="4">
+    <div class="section-tag problem">The Problem</div>
+    <div class="slide-inner">
+        <h2 class="slide-title reveal">This is not theoretical.</h2>
+        <p class="slide-subtitle reveal" style="margin-top:16px;">Real incidents where AI coding tools exposed proprietary code or created ownership disputes.</p>
+        <div class="bubble-grid">
+            <div class="speech-bubble reveal-left" style="border-left:3px solid var(--burn-red);">
+                <div class="stat-bubble accent-burn">92%</div>
+                <p class="quote">of enterprises using AI coding tools have <span class="highlight-red">no formal data governance policy</span> for what code the agent can access.</p>
+                <p class="attribution">\u2014 Enterprise AI Governance Survey, 2026</p>
+            </div>
+            <div class="speech-bubble reveal-right" style="border-left:3px solid var(--alert-amber);">
+                <div class="stat-bubble accent-amber">$1.2B</div>
+                <p class="quote">in IP litigation is pending over <span class="highlight-red">AI-generated code provenance</span> \u2014 who owns the output when the model trained on your proprietary patterns?</p>
+                <p class="attribution">\u2014 IP Watchdog, Q2 2026</p>
+            </div>
+        </div>
+        <div class="card reveal" style="margin-top:40px;border-left:3px solid var(--off-white);max-width:1400px;">
+            <p class="body-lg">Samsung, Amazon, Apple, and major banks have <span class="accent-burn" style="font-weight:700;">banned or restricted</span> public AI coding tools after code leaks. The pattern: an engineer pastes proprietary code into a chat, the vendor logs it, and it surfaces in training data months later.</p>
+        </div>
+    </div>
+    <div class="source-cite">Reuters \u00b7 Enterprise AI Governance Survey 2026 \u00b7 IP Watchdog</div>
+</section>
+
+<!-- SLIDE 6 — ENTER KIMCHI: SOVEREIGN BY DESIGN -->
+<section class="slide" data-slide="5">
+    <div class="section-tag product">The Solution</div>
+    <div class="slide-inner">
+        <div class="split-layout">
+            <div>
+                <h2 class="slide-title reveal">Sovereignty is not a feature.<br>It's an architecture.</h2>
+                <p class="body-lg reveal" style="margin-top:24px;max-width:600px;">Kimchi was built with data sovereignty as a design constraint from day one \u2014 not a compliance retrofit bolted on after a breach.</p>
+                <div class="reveal" style="margin-top:32px;">
+                    <div class="mono accent-red" style="font-size:14px;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">Built by Cast AI</div>
+                    <p class="body-text">Open-source coding agent + inference cloud + spend console. <span class="accent-lime" style="font-weight:600;">Self-host in your VPC</span> or run on dedicated GPUs.</p>
+                </div>
+                <div class="reveal" style="margin-top:24px;">
+                    <div class="mono accent-blue" style="font-size:14px;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">Data Sovereignty First</div>
+                    <p class="body-text">Your code <span class="accent-blue" style="font-weight:600;">never leaves your control</span>. No third-party cloud inference. No training on your data. No cross-border transfers.</p>
+                </div>
+                <div class="reveal" style="margin-top:24px;">
+                    <span class="mono caption">github.com/getkimchi/kimchi \u00b7 open source \u00b7 self-hostable</span>
+                </div>
+            </div>
+            <div class="reveal-right" style="display:flex;align-items:center;justify-content:center;height:100%;">
+                <div style="width:100%;max-width:760px;height:680px;position:relative;">
+                    <!-- Terminal window -->
+                    <div class="terminal" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:100%;height:100%;box-shadow:0 30px 80px rgba(0,0,0,0.6),0 0 60px rgba(59,130,246,0.15);">
+                        <div class="terminal-titlebar">
+                            <div class="terminal-dot red"></div>
+                            <div class="terminal-dot yellow"></div>
+                            <div class="terminal-dot green"></div>
+                            <div class="terminal-title">kimchi \u2014 sovereign mode</div>
+                        </div>
+                        <div class="terminal-body" style="padding:32px;font-size:20px;line-height:1.8;">
+                            <div><span class="prompt">$</span> <span class="cmd">kimchi --self-host</span></div>
+                            <div style="margin-top:12px;"><span class="ok">\u2713</span> Inference: <span class="ok">localhost (your VPC)</span></div>
+                            <div><span class="ok">\u2713</span> Data residency: <span class="ok">your region</span></div>
+                            <div><span class="ok">\u2713</span> Retention: <span class="ok">zero</span></div>
+                            <div><span class="ok">\u2713</span> Training on your data: <span class="ok">never</span></div>
+                            <div style="margin-top:16px;"><span class="prompt">\u203A</span> <span class="cmd">/ferment build auth service</span></div>
+                            <div style="margin-top:8px;" class="pending">  <span class="cursor"></span></div>
+                        </div>
+                        <!-- Floating sovereignty badge -->
+                        <div style="position:absolute;top:-25px;right:-25px;width:90px;height:90px;border-radius:50%;background:var(--terminal-black);border:2px solid var(--sovereignty-blue);display:flex;align-items:center;justify-content:center;box-shadow:0 0 40px rgba(59,130,246,0.4);animation:glowPulseBlue 3s ease-in-out infinite;z-index:10;">
+                            <img src="assets/logo200x200-trasnparent.png" alt="Kimchi" style="width:54px;height:54px;">
+                        </div>
+                        <!-- Floating stat badges -->
+                        <div style="position:absolute;bottom:30px;right:20px;background:rgba(18,18,26,0.9);backdrop-filter:blur(12px);border:1px solid var(--hairline);border-radius:100px;padding:12px 20px;font-family:var(--font-mono);font-size:14px;color:var(--sovereignty-blue);box-shadow:0 8px 30px rgba(0,0,0,0.4);z-index:10;">data stays in VPC</div>
+                    </div>
+                    <!-- Background glow -->
+                    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:120%;height:120%;background:radial-gradient(ellipse,rgba(59,130,246,0.08) 0%,transparent 70%);pointer-events:none;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="source-cite">kimchi.dev \u00b7 github.com/getkimchi/kimchi</div>
+</section>
+
+<!-- SLIDE 7 — FOUR PILLARS OF SOVEREIGNTY -->
+<section class="slide" data-slide="6">
+    <div class="section-tag governance">Sovereignty Framework</div>
+    <div class="slide-inner">
+        <h2 class="slide-title reveal">Four pillars of code sovereignty.</h2>
+        <p class="slide-subtitle reveal" style="margin-top:16px;">A practical framework for evaluating any AI coding tool \u2014 not just Kimchi.</p>
+        <div class="pillar-grid">
+            <div class="pillar-card reveal-scale">
+                <div class="pillar-icon">\uD83C\uDFF4</div>
+                <div class="pillar-num">PILLAR 01</div>
+                <div class="pillar-title">Data Residency</div>
+                <div class="pillar-desc">Code and prompts processed in a region you control. No cross-border inference. DPDP Act and GDPR compliant by architecture.</div>
+            </div>
+            <div class="pillar-card reveal-scale">
+                <div class="pillar-icon">\uD83D\uDD10</div>
+                <div class="pillar-num">PILLAR 02</div>
+                <div class="pillar-title">Zero Retention</div>
+                <div class="pillar-desc">No prompt logging, no output caching, no context storage. Data is processed in-memory and discarded. Nothing persists after the session ends.</div>
+            </div>
+            <div class="pillar-card reveal-scale">
+                <div class="pillar-icon">\uD83D\uDC6E</div>
+                <div class="pillar-num">PILLAR 03</div>
+                <div class="pillar-title">No Training on Your Data</div>
+                <div class="pillar-desc">Contractually prohibited AND enforced by architecture. Self-hosted models can't phone home. Your codebase never becomes someone else's training set.</div>
+            </div>
+            <div class="pillar-card reveal-scale">
+                <div class="pillar-icon">\uD83D\uDCDD</div>
+                <div class="pillar-num">PILLAR 04</div>
+                <div class="pillar-title">Full Audit Trail</div>
+                <div class="pillar-desc">Every LLM request is phase-tagged: explore, plan, build, review, research. You see exactly what was sent, to which model, and why \u2014 per request.</div>
+            </div>
+        </div>
+        <div class="card reveal" style="margin-top:40px;border-left:3px solid var(--sovereignty-blue);max-width:1400px;">
+            <p class="body-text">If your AI coding tool can't answer all four of these <span class="accent-blue" style="font-weight:700;">with architectural proof, not just a privacy policy</span> \u2014 you have a sovereignty gap.</p>
+        </div>
+    </div>
+    <div class="source-cite">kimchi.dev/blog/data-sovereignty-ai-coding</div>
+</section>
+
+<!-- SLIDE 8 — SELF-HOSTED ARCHITECTURE (VPC DIAGRAM) -->
+<section class="slide" data-slide="7">
+    <div class="section-tag how">Architecture</div>
+    <div class="slide-inner">
+        <h2 class="slide-title reveal">Self-host in your VPC. Full stop.</h2>
+        <p class="slide-subtitle reveal" style="margin-top:16px;">The agent, the inference, the models \u2014 all inside your network perimeter. Nothing crosses the boundary.</p>
+        <div class="vpc-diagram reveal-scale">
+            <!-- External: Developer -->
+            <div class="vpc-external" style="left:42%;top:0;">
+                <div class="vb-icon">\uD83D\uDC68\u200D\uD83D\uDCBB</div>
+                <div class="vb-title">Developer</div>
+            </div>
+            <!-- VPC Perimeter -->
+            <div class="vpc-perimeter">
+                <div class="vpc-label">YOUR VPC \u2014 data never leaves</div>
+                <!-- Kimchi Agent -->
+                <div class="vpc-box" style="left:8%;top:30px;">
+                    <div class="vb-icon">\uD83E\uDD16</div>
+                    <div class="vb-title">Kimchi Agent</div>
+                    <div class="vb-sub">CLI harness</div>
+                </div>
+                <!-- Orchestrator -->
+                <div class="vpc-box" style="left:38%;top:30px;">
+                    <div class="vb-icon">\uD83C\uDFAF</div>
+                    <div class="vb-title">Orchestrator</div>
+                    <div class="vb-sub">routes tasks locally</div>
+                </div>
+                <!-- Model Inference -->
+                <div class="vpc-box" style="left:68%;top:30px;">
+                    <div class="vb-icon">\uD83E\uDDEA</div>
+                    <div class="vb-title">Model Inference</div>
+                    <div class="vb-sub">Nvidia B300 GPUs</div>
+                </div>
+                <!-- Codebase -->
+                <div class="vpc-box" style="left:8%;top:200px;">
+                    <div class="vb-icon">\uD83D\uDCC1</div>
+                    <div class="vb-title">Your Codebase</div>
+                    <div class="vb-sub">source + context</div>
+                </div>
+                <!-- Spend Console -->
+                <div class="vpc-box" style="left:38%;top:200px;">
+                    <div class="vb-icon">\uD83D\uDCCA</div>
+                    <div class="vb-title">Spend Console</div>
+                    <div class="vb-sub">audit + caps</div>
+                </div>
+                <!-- Audit Log -->
+                <div class="vpc-box" style="left:68%;top:200px;">
+                    <div class="vb-icon">\uD83D\uDCDD</div>
+                    <div class="vb-title">Audit Log</div>
+                    <div class="vb-sub">phase-tagged</div>
+                </div>
+                <!-- No external arrows -->
+                <div style="position:absolute;bottom:30px;left:50%;transform:translateX(-50%);font-family:var(--font-mono);font-size:18px;color:var(--burn-red);text-align:center;">
+                    \u2717 No data exits to vendor cloud \u00b7 \u2717 No training data collection \u00b7 \u2717 No cross-border transfers
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="source-cite">docs.kimchi.dev/docs/self-hosting \u00b7 kimchi.dev/pricing</div>
+</section>
+
+<!-- SLIDE 9 — MULTI-MODEL WITHOUT DATA LEAVING -->
+<section class="slide" data-slide="8">
+    <div class="section-tag how">Architecture</div>
+    <div class="slide-inner">
+        <h2 class="slide-title reveal">Multi-model routing \u2014 without data leakage.</h2>
+        <p class="slide-subtitle reveal" style="margin-top:16px;">The orchestrator routes tasks to the best-fit model. When self-hosted, all models run inside your VPC \u2014 no data crosses the perimeter.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:48px;align-items:start;">
+            <div class="reveal-left">
+                <div class="card card-accent-lime" style="margin-bottom:20px;">
+                    <div class="mono accent-lime" style="font-size:13px;">SOVEREIGN ROUTING</div>
+                    <p class="body-text" style="margin-top:8px;">Seven specialized roles, all running on models you control. The orchestrator classifies each task and routes it to the right model \u2014 locally.</p>
+                </div>
+                <div style="display:flex;gap:20px;flex-wrap:wrap;">
+                    <div style="text-align:center;">
+                        <div class="mono caption">PLANNER</div>
+                        <div class="h3 accent-lime" style="margin-top:8px;font-size:20px;">Kimi K2.7</div>
+                    </div>
+                    <div style="font-size:24px;color:var(--dim-gray);padding-top:16px;">\u2192</div>
+                    <div style="text-align:center;">
+                        <div class="mono caption">BUILDER</div>
+                        <div class="h3 accent-lime" style="margin-top:8px;font-size:20px;">MiniMax M3</div>
+                    </div>
+                    <div style="font-size:24px;color:var(--dim-gray);padding-top:16px;">\u2192</div>
+                    <div style="text-align:center;">
+                        <div class="mono caption">JUDGE</div>
+                        <div class="h3 accent-lime" style="margin-top:8px;font-size:20px;">Kimi K2.7</div>
+                    </div>
+                    <div style="font-size:24px;color:var(--dim-gray);padding-top:16px;">\u2192</div>
+                    <div style="text-align:center;">
+                        <div class="mono caption">EXPLORER</div>
+                        <div class="h3 accent-lime" style="margin-top:8px;font-size:20px;">Nemotron-3</div>
+                    </div>
+                </div>
+            </div>
+            <div class="reveal-right" style="display:flex;flex-direction:column;gap:20px;">
+                <div class="card card-accent-blue">
+                    <div class="mono accent-blue" style="font-size:13px;">KEY DIFFERENCE</div>
+                    <p class="body-text" style="margin-top:8px;">With proprietary tools, each model call sends your code to a different vendor endpoint. With self-hosted Kimchi, <span class="accent-blue" style="font-weight:600;">all inference happens inside your VPC</span> \u2014 even multi-model routing.</p>
+                </div>
+                <div class="card card-accent-green">
+                    <div class="mono accent-green" style="font-size:13px;">COST ADVANTAGE</div>
+                    <div class="big-stat accent-green" style="margin-top:8px;">40\u201360%</div>
+                    <p class="caption" style="margin-top:4px;">cheaper than single proprietary endpoint \u2014 AND sovereign</p>
+                </div>
+                <div class="card card-accent-lime">
+                    <div class="mono accent-lime" style="font-size:13px;">BYOK OPTION</div>
+                    <p class="body-text" style="margin-top:8px;">Prefer managed inference? Bring your own API keys. Kimchi routes to <span class="accent-lime" style="font-weight:600;">your provider accounts</span> \u2014 never its own.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="source-cite">docs.kimchi.dev \u00b7 kimchi.dev/blog/why-we-use-3-models-instead-of-1</div>
+</section>
+
+<!-- SLIDE 10 — SPEND GOVERNANCE = DATA GOVERNANCE -->
+<section class="slide" data-slide="9">
+    <div class="section-tag governance">Governance</div>
+    <div class="slide-inner">
+        <h2 class="slide-title reveal">Spend governance is data governance.</h2>
+        <p class="slide-subtitle reveal" style="margin-top:16px;">If you can't see what the agent is sending, you can't govern what's leaving your perimeter. The spend console gives you both.</p>
+        <div style="display:grid;grid-template-columns:1fr 1.4fr;gap:40px;margin-top:32px;align-items:start;">
+            <div>
+                <div class="reveal" style="display:flex;flex-direction:column;gap:14px;">
+                    <div class="card card-accent-blue" style="padding:16px 24px;">
+                        <div class="h3 accent-blue" style="font-size:20px;">Per Org</div>
+                        <p class="caption">Hard ceiling on data egress + spend</p>
+                    </div>
+                    <div class="card" style="padding:16px 24px;border-left:3px solid var(--alert-amber);">
+                        <div class="h3 accent-amber" style="font-size:20px;">Per Team</div>
+                        <p class="caption">Controlled access to proprietary repos</p>
+                    </div>
+                    <div class="card card-accent-red" style="padding:16px 24px;">
+                        <div class="h3 accent-red" style="font-size:20px;">Per User / API Key</div>
+                        <p class="caption">Individual provenance for every request</p>
+                    </div>
+                </div>
+                <div class="card card-accent-blue reveal" style="margin-top:24px;">
+                    <div class="mono accent-blue" style="font-size:13px;">PHASE-TAGGED PROVENANCE</div>
+                    <p class="body-text" style="margin-top:8px;">Every LLM request is tagged: <span class="mono accent-lime">explore</span>, <span class="mono accent-lime">plan</span>, <span class="mono accent-lime">build</span>, <span class="mono accent-lime">review</span>, <span class="mono accent-lime">research</span>. You know exactly what data was sent for what purpose.</p>
+                </div>
+            </div>
+            <div class="reveal-right">
+                <img src="assets/ux-page.png" alt="Kimchi Console" style="width:100%;max-height:500px;object-fit:contain;border-radius:12px;border:1px solid var(--hairline);box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+                <p class="caption reveal" style="text-align:center;margin-top:12px;">Kimchi Console \u2014 spend + data provenance in one view</p>
+            </div>
+        </div>
+    </div>
+    <div class="source-cite">kimchi.dev \u00b7 kimchi.dev/blog/the-500-million-ai-bill</div>
+</section>
+
+<!-- SLIDE 11 — COMPLIANCE -->
+<section class="slide" data-slide="10">
+    <div class="section-tag governance">Compliance</div>
+    <div class="slide-inner">
+        <h2 class="slide-title reveal">Certified. Compliant. Auditable.</h2>
+        <p class="slide-subtitle reveal" style="margin-top:16px;">Data sovereignty was a design constraint from day one, not a compliance retrofit.</p>
+        <div class="compliance-grid">
+            <div class="card card-accent-lime reveal-scale">
+                <img src="assets/logo200x200-trasnparent.png" alt="" style="width:48px;height:48px;margin-bottom:16px;opacity:0.8;">
+                <div class="mono accent-lime" style="font-size:13px;">CERTIFIED</div>
+                <div class="h3" style="margin-top:8px;">ISO 27001</div>
+                <p class="caption" style="margin-top:4px;">Information security management</p>
+            </div>
+            <div class="card card-accent-lime reveal-scale">
+                <div class="mono accent-lime" style="font-size:13px;margin-top:64px;">CERTIFIED</div>
+                <div class="h3" style="margin-top:8px;">SOC 2 Type II</div>
+                <p class="caption" style="margin-top:4px;">Trust services criteria</p>
+            </div>
+            <div class="card card-accent-lime reveal-scale">
+                <div class="mono accent-lime" style="font-size:13px;margin-top:64px;">COMPLIANT</div>
+                <div class="h3" style="margin-top:8px;">GDPR + DPDP Act</div>
+                <p class="caption" style="margin-top:4px;">EU + India data protection</p>
+            </div>
+            <div class="card card-accent-blue reveal-scale">
+                <div class="mono accent-blue" style="font-size:13px;margin-top:64px;">DEPLOYMENT</div>
+                <div class="h3" style="margin-top:8px;">Your VPC</div>
+                <p class="caption" style="margin-top:4px;">Self-hosted, full sovereignty. Nvidia B300 GPUs.</p>
+            </div>
+        </div>
+        <div class="card reveal" style="margin-top:40px;border-left:3px solid var(--off-white);max-width:1400px;">
+            <p class="body-lg">Your code <span class="accent-lime" style="font-weight:700;">never leaves your control.</span> Run it standalone in your VPC or on dedicated Nvidia B300 GPUs on Cast AI's inference infrastructure \u2014 with contractual zero-retention guarantees.</p>
+        </div>
+    </div>
+    <div class="source-cite">kimchi.dev/blog/kimchi-coding-is-ga \u00b7 kimchi.dev/pricing</div>
+</section>
+
+<!-- SLIDE 12 — PROOF -->
+<section class="slide" data-slide="11">
+    <div class="section-tag proof">Proof</div>
+    <div class="slide-inner">
+        <h2 class="slide-title reveal">Sovereignty in production.</h2>
+        <div class="bubble-grid">
+            <div class="speech-bubble reveal-left" style="border-left:3px solid var(--sovereignty-blue);">
+                <div class="stat-bubble accent-blue">2,100+</div>
+                <p class="quote">enterprises run Kimchi with <span class="highlight-blue">full data sovereignty</span> \u2014 including regulated industries that can't send code to third-party clouds.</p>
+                <p class="attribution">\u2014 Cast AI customer base, Aug 2026</p>
+            </div>
+            <div class="speech-bubble reveal-right" style="border-left:3px solid var(--savings-green);">
+                <div class="stat-bubble accent-green">0</div>
+                <p class="quote">data retention incidents. <span class="highlight">Zero prompts stored, zero outputs cached, zero training data collected</span> \u2014 by architecture, not just by policy.</p>
+                <p class="attribution">\u2014 Kimchi self-hosted deployments</p>
+            </div>
+        </div>
+        <div class="speech-bubble reveal" style="margin-top:40px;max-width:1200px;border-left:3px solid var(--kimchi-lime);">
+            <p class="quote" style="font-size:20px;">"We needed an AI coding tool that our compliance team would actually approve. Kimchi's self-hosted deployment meant our code <span class="highlight">never left our VPC</span>. The audit trail gave us per-request provenance that no other tool could match. <span class="highlight-red">It passed security review in two weeks, not six months.</span>"</p>
+            <p class="attribution">\u2014 Dekel Shavit, Senior Director of Engineering, Akamai</p>
+        </div>
+    </div>
+    <div class="source-cite">kimchi.dev \u00b7 kimchi.dev/blog/kimchi-coding-is-ga</div>
+</section>
+
+<!-- SLIDE 13 — THE CHECKLIST -->
+<section class="slide" data-slide="12">
+    <div class="section-tag how">Actionable</div>
+    <div class="slide-inner">
+        <h2 class="slide-title reveal">Your AI coding sovereignty checklist.</h2>
+        <p class="slide-subtitle reveal" style="margin-top:16px;">Ask these questions before letting any AI coding agent touch your codebase.</p>
+        <div class="checklist">
+            <div class="check-item reveal-left">
+                <div class="check-icon">\u2705</div>
+                <div class="check-text"><strong>Where does inference happen?</strong> Can the vendor prove your code stays in your region, or does it route to an unknown cloud?</div>
+            </div>
+            <div class="check-item reveal-left">
+                <div class="check-icon">\u2705</div>
+                <div class="check-text"><strong>What is the retention policy?</strong> Are prompts and outputs stored? For how long? Can you enforce zero-retention at the architecture level?</div>
+            </div>
+            <div class="check-item reveal-left">
+                <div class="check-icon">\u2705</div>
+                <div class="check-text"><strong>Can your data be used for training?</strong> Is it contractually prohibited AND architecturally impossible? "We don't train on your data" in a privacy policy is not enough.</div>
+            </div>
+            <div class="check-item reveal-left">
+                <div class="check-icon">\u2705</div>
+                <div class="check-text"><strong>Can you self-host?</strong> If compliance requires full sovereignty, can you run the entire stack \u2014 agent, models, inference \u2014 inside your VPC?</div>
+            </div>
+            <div class="check-item reveal-left">
+                <div class="check-icon">\u2705</div>
+                <div class="check-text"><strong>Is there a per-request audit trail?</strong> Can you see exactly what was sent, to which model, for what purpose, by whom?</div>
+            </div>
+        </div>
+    </div>
+    <div class="source-cite">kimchi.dev/blog/data-sovereignty-ai-coding</div>
+</section>
+
+<!-- SLIDE 14 — PRICING (SOVEREIGNTY FOR EVERY TEAM) -->
+<section class="slide" data-slide="13">
+    <div class="section-tag proof">Next Steps</div>
+    <div class="slide-inner">
+        <h2 class="slide-title reveal">Sovereignty at every tier.</h2>
+        <p class="slide-subtitle reveal" style="margin-top:16px;">From community to enterprise. No credit card. No waiting list. No lock-in.</p>
+        <div class="pricing-grid">
+            <div class="pricing-card reveal-scale">
+                <div class="tier-name">Community</div>
+                <div class="price">$0</div>
+                <ul class="features"><li>250k context window</li><li>Max 3 seats, 1 team</li><li>Multi-model routing</li><li>Ferment</li><li>Limited speed</li></ul>
+            </div>
+            <div class="pricing-card reveal-scale" style="border-top:2px solid var(--chili-red);">
+                <div class="tier-name">Coder</div>
+                <div class="price">$20<span class="per">/mo</span></div>
+                <ul class="features"><li>1M context window</li><li>$25 monthly credits</li><li>Priority speed</li><li>Inference API</li><li>1 Teleport workspace</li></ul>
+            </div>
+            <div class="pricing-card popular reveal-scale">
+                <div class="popular-tag">Most Popular</div>
+                <div class="tier-name">Teams</div>
+                <div class="price">$35<span class="per">/seat/mo</span></div>
+                <ul class="features"><li>1M context window</li><li>$45 monthly credits</li><li>Max 150 seats</li><li>Studio board + RBAC</li><li>3 Teleport workspaces</li></ul>
+            </div>
+            <div class="pricing-card reveal-scale" style="border-top:2px solid var(--sovereignty-blue);">
+                <div class="tier-name">Enterprise</div>
+                <div class="price">Custom</div>
+                <ul class="features"><li>1M context window</li><li>Unlimited seats &amp; teams</li><li><strong style="color:var(--sovereignty-blue);">VPC self-hosting</strong></li><li>Unlimited Teleport</li><li>24\u00d77 dedicated CSM</li></ul>
+            </div>
+        </div>
+    </div>
+    <div class="source-cite">kimchi.dev/pricing</div>
+</section>
+
+<!-- SLIDE 15 — THANK YOU -->
+<section class="slide thanks-slide" data-slide="14">
+    <div class="slide-inner">
+        <img src="assets/logo200x200-trasnparent.png" alt="Kimchi" class="thanks-logo reveal-scale floating">
+        <h2 class="thanks-headline reveal">Your code. Your rules.</h2>
+        <p class="thanks-quote reveal">"Sovereignty isn't about distrust. It's about knowing exactly where your most valuable asset lives."</p>
+        <p class="thanks-attribution reveal">\u2014 Cloud-Native &amp; AI Unlocked, Bengaluru \u00b7 Aug 22, 2026</p>
+        <div class="thanks-actions reveal">
+            <div class="qr-container">
+                <div class="connect-text">Connect with me</div>
+                <img src="assets/qr-real.png" alt="Scan to connect">
+                <div class="qr-label">Scan for Q&amp;A \u2192</div>
+            </div>
+            <div class="star-cta">
+                <a href="https://github.com/getkimchi/kimchi" class="star-btn">
+                    <span class="star-icon">\u2B50</span>
+                    <span>Star the repo</span>
+                </a>
+                <div class="star-label">github.com/getkimchi/kimchi</div>
+            </div>
+        </div>
+        <div class="reveal" style="margin-top:40px;display:flex;gap:48px;align-items:center;font-family:var(--font-mono);font-size:15px;color:var(--muted-gray);">
+            <span>Cloud-Native &amp; AI Unlocked</span>
+            <span style="width:1px;height:20px;background:var(--hairline);"></span>
+            <span class="accent-red">Kunal Das</span>
+            <span style="width:1px;height:20px;background:var(--hairline);"></span>
+            <span class="accent-blue">kimchi.dev</span>
+        </div>
+    </div>
+</section>
+
+</main>
+</div>
+<div class="custom-cursor" id="cursor"></div>
+<div class="cursor-dot" id="cursorDot"></div>
+<div class="page-indicator" id="pageIndicator"></div>
+<div class="deck-controls">
+    <button id="prevBtn" title="Previous">\u2039</button>
+    <span id="slideCounter">1 / 15</span>
+    <button id="nextBtn" title="Next">\u203A</button>
+</div>
+
+<script>
+class SlidePresentation {
+    constructor() {
+        this.slides = document.querySelectorAll('.slide');
+        this.currentSlide = 0;
+        this.totalSlides = this.slides.length;
+        this.stage = document.getElementById('deckStage');
+        this.counter = document.getElementById('slideCounter');
+        this.pageIndicator = document.getElementById('pageIndicator');
+        this.setupStageScale();
+        this.setupKeyboardNav();
+        this.setupTouchNav();
+        this.setupButtons();
+        this.setupPageIndicator();
+        this.setupCustomCursor();
+        this.showSlide(0);
+    }
+
+    setupStageScale() {
+        const scale = () => {
+            const f = Math.min(window.innerWidth/1920, window.innerHeight/1080);
+            const x = (window.innerWidth-1920*f)/2;
+            const y = (window.innerHeight-1080*f)/2;
+            this.stage.style.transform = `translate(${x}px,${y}px) scale(${f})`;
+        };
+        scale(); window.addEventListener('resize', scale);
+    }
+
+    setupKeyboardNav() {
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); this.next(); }
+            else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); this.prev(); }
+            else if (e.key === 'Home') { e.preventDefault(); this.showSlide(0); }
+            else if (e.key === 'End') { e.preventDefault(); this.showSlide(this.totalSlides-1); }
+        });
+    }
+
+    setupTouchNav() {
+        let sx = 0;
+        this.stage.addEventListener('touchstart', (e) => { sx = e.touches[0].clientX; }, {passive:true});
+        this.stage.addEventListener('touchend', (e) => {
+            const d = sx - e.changedTouches[0].clientX;
+            if (Math.abs(d) > 50) { d > 0 ? this.next() : this.prev(); }
+        }, {passive:true});
+    }
+
+    setupButtons() {
+        document.getElementById('nextBtn').addEventListener('click', () => this.next());
+        document.getElementById('prevBtn').addEventListener('click', () => this.prev());
+    }
+
+    setupPageIndicator() {
+        for (let i = 0; i < this.totalSlides; i++) {
+            const dot = document.createElement('div');
+            dot.className = 'page-dot';
+            dot.addEventListener('click', () => this.showSlide(i));
+            dot.addEventListener('mouseenter', () => document.getElementById('cursor').classList.add('hover'));
+            dot.addEventListener('mouseleave', () => document.getElementById('cursor').classList.remove('hover'));
+            this.pageIndicator.appendChild(dot);
+        }
+    }
+
+    updatePageIndicator() {
+        const dots = this.pageIndicator.querySelectorAll('.page-dot');
+        dots.forEach((d, i) => {
+            d.classList.remove('active', 'completed');
+            if (i === this.currentSlide) d.classList.add('active');
+            else if (i < this.currentSlide) d.classList.add('completed');
+        });
+    }
+
+    setupCustomCursor() {
+        const c = document.getElementById('cursor');
+        const cd = document.getElementById('cursorDot');
+        document.addEventListener('mousemove', (e) => {
+            c.style.left = e.clientX + 'px'; c.style.top = e.clientY + 'px';
+            cd.style.left = e.clientX + 'px'; cd.style.top = e.clientY + 'px';
+        });
+        document.querySelectorAll('a,button,.page-dot,.pricing-card,.flow-node').forEach(el => {
+            el.addEventListener('mouseenter', () => c.classList.add('hover'));
+            el.addEventListener('mouseleave', () => c.classList.remove('hover'));
+        });
+        document.addEventListener('mouseleave', () => { c.style.opacity='0'; cd.style.opacity='0'; });
+        document.addEventListener('mouseenter', () => { c.style.opacity='1'; cd.style.opacity='1'; });
+    }
+
+    next() { if (this.currentSlide < this.totalSlides-1) this.showSlide(this.currentSlide+1); }
+    prev() { if (this.currentSlide > 0) this.showSlide(this.currentSlide-1); }
+
+    showSlide(index) {
+        this.currentSlide = Math.max(0, Math.min(index, this.totalSlides-1));
+        this.slides.forEach((s, i) => {
+            s.classList.toggle('active', i === this.currentSlide);
+            s.classList.toggle('visible', i === this.currentSlide);
+        });
+        this.counter.textContent = `${this.currentSlide+1} / ${this.totalSlides}`;
+        this.updatePageIndicator();
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => { new SlidePresentation(); });
+</script>
+</body>
+</html>
