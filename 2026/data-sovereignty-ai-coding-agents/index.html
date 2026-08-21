@@ -210,7 +210,7 @@ img,video,canvas,svg { max-width:100%; max-height:100%; }
 .check-item .check-text strong { color:var(--kimchi-lime); }
 
 /* === SPLIT LAYOUT === */
-.split-layout { display:grid; grid-template-columns:1fr 1fr; gap:48px; align-items:center; height:calc(100% - 160px); }
+.split-layout { display:grid; grid-template-columns:1fr 1fr; gap:48px; align-items:center; min-height:calc(100% - 160px); }
 .split-layout > div { min-width:0; display:flex; flex-direction:column; justify-content:center; }
 .screenshot-frame { border:1px solid var(--hairline); border-radius:12px; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,0.5); }
 .screenshot-frame img { width:100%; height:auto; display:block; }
@@ -422,17 +422,17 @@ img,video,canvas,svg { max-width:100%; max-height:100%; }
     <div class="slide-inner">
         <div class="split-layout">
             <div>
-                <h2 class="slide-title reveal">Sovereignty is not a feature.<br>It's an architecture.</h2>
-                <p class="body-lg reveal" style="margin-top:24px;max-width:600px;">Kimchi was built with data sovereignty as a design constraint from day one \u2014 not a compliance retrofit bolted on after a breach.</p>
-                <div class="reveal" style="margin-top:32px;">
+                <h2 class="slide-title reveal" style="font-size:52px;">Sovereignty is not a feature.<br>It's an architecture.</h2>
+                <p class="body-lg reveal" style="margin-top:20px;max-width:600px;">Kimchi was built with data sovereignty as a design constraint from day one \u2014 not a compliance retrofit bolted on after a breach.</p>
+                <div class="reveal" style="margin-top:24px;">
                     <div class="mono accent-red" style="font-size:14px;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">Built by Cast AI</div>
                     <p class="body-text">Open-source coding agent + inference cloud + spend console. <span class="accent-lime" style="font-weight:600;">Self-host in your VPC</span> or run on dedicated GPUs.</p>
                 </div>
-                <div class="reveal" style="margin-top:24px;">
+                <div class="reveal" style="margin-top:20px;">
                     <div class="mono accent-blue" style="font-size:14px;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">Data Sovereignty First</div>
                     <p class="body-text">Your code <span class="accent-blue" style="font-weight:600;">never leaves your control</span>. No third-party cloud inference. No training on your data. No cross-border transfers.</p>
                 </div>
-                <div class="reveal" style="margin-top:24px;">
+                <div class="reveal" style="margin-top:20px;">
                     <span class="mono caption">github.com/getkimchi/kimchi \u00b7 open source \u00b7 self-hostable</span>
                 </div>
             </div>
@@ -633,27 +633,27 @@ img,video,canvas,svg { max-width:100%; max-height:100%; }
         <p class="slide-subtitle reveal" style="margin-top:16px;">If you can't see what the agent is sending, you can't govern what's leaving your perimeter. The spend console gives you both.</p>
         <div style="display:grid;grid-template-columns:1fr 1.4fr;gap:40px;margin-top:32px;align-items:start;">
             <div>
-                <div class="reveal" style="display:flex;flex-direction:column;gap:14px;">
-                    <div class="card card-accent-blue" style="padding:16px 24px;">
+                <div class="reveal" style="display:flex;flex-direction:column;gap:12px;">
+                    <div class="card card-accent-blue" style="padding:14px 24px;">
                         <div class="h3 accent-blue" style="font-size:20px;">Per Org</div>
                         <p class="caption">Hard ceiling on data egress + spend</p>
                     </div>
-                    <div class="card" style="padding:16px 24px;border-left:3px solid var(--alert-amber);">
+                    <div class="card" style="padding:14px 24px;border-left:3px solid var(--alert-amber);">
                         <div class="h3 accent-amber" style="font-size:20px;">Per Team</div>
                         <p class="caption">Controlled access to proprietary repos</p>
                     </div>
-                    <div class="card card-accent-red" style="padding:16px 24px;">
+                    <div class="card card-accent-red" style="padding:14px 24px;">
                         <div class="h3 accent-red" style="font-size:20px;">Per User / API Key</div>
                         <p class="caption">Individual provenance for every request</p>
                     </div>
                 </div>
-                <div class="card card-accent-blue reveal" style="margin-top:24px;">
+                <div class="card card-accent-blue reveal" style="margin-top:20px;">
                     <div class="mono accent-blue" style="font-size:13px;">PHASE-TAGGED PROVENANCE</div>
                     <p class="body-text" style="margin-top:8px;">Every LLM request is tagged: <span class="mono accent-lime">explore</span>, <span class="mono accent-lime">plan</span>, <span class="mono accent-lime">build</span>, <span class="mono accent-lime">review</span>, <span class="mono accent-lime">research</span>. You know exactly what data was sent for what purpose.</p>
                 </div>
             </div>
             <div class="reveal-right">
-                <img src="assets/ux-page.png" alt="Kimchi Console" style="width:100%;max-height:500px;object-fit:contain;border-radius:12px;border:1px solid var(--hairline);box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+                <img src="assets/ux-page.png" alt="Kimchi Console" style="width:100%;max-height:460px;object-fit:contain;border-radius:12px;border:1px solid var(--hairline);box-shadow:0 20px 60px rgba(0,0,0,0.3);">
                 <p class="caption reveal" style="text-align:center;margin-top:12px;">Kimchi Console \u2014 spend + data provenance in one view</p>
             </div>
         </div>
