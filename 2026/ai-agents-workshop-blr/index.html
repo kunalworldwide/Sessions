@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ship Your First AI Agent — AI Agents Workshop BLR | Kunal Das</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* === CSS PROPERTIES — KIMCHI BRAND === */
+:root {
+    --chili-red: #F4572E; --chili-red-dim: rgba(244,87,46,0.15);
+    --kimchi-lime: #BBE33B; --kimchi-lime-dim: rgba(187,227,59,0.15);
+    --terminal-black: #08080C; --panel-charcoal: #12121A;
+    --panel-steel: #1E1E28; --hairline: #2A2A38;
+    --off-white: #F0F0F5; --muted-gray: #8888A0; --dim-gray: #4A4A5C;
+    --savings-green: #28C840; --alert-amber: #FEBC2E; --burn-red: #FF5F57;
+    --font-display: 'Space Grotesk', system-ui, sans-serif;
+    --font-body: 'Space Grotesk', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --ease-expo: cubic-bezier(0.16,1,0.3,1);
+    --ease-back: cubic-bezier(0.34,1.56,0.64,1);
+}
+
+/* === RESET === */
+* { margin:0; padding:0; box-sizing:border-box; }
+html,body { width:100%; height:100%; margin:0; overflow:hidden; background:var(--terminal-black); font-family:var(--font-body); color:var(--off-white); cursor:none; }
+
+/* === VIEWPORT + STAGE === */
+.deck-viewport { position:fixed; inset:0; overflow:hidden; background:var(--terminal-black); }
+.deck-stage { position:absolute; left:0; top:0; width:1920px; height:1080px; overflow:hidden; transform-origin:0 0; background:var(--terminal-black); }
+.slide { position:absolute; inset:0; width:1920px; height:1080px; overflow:hidden; display:block; visibility:hidden; opacity:0; pointer-events:none; background:var(--terminal-black); }
+.slide.active,.slide.visible { visibility:visible; opacity:1; pointer-events:auto; z-index:1; }
+img,video,canvas,svg { max-width:100%; max-height:100%; }
+
+@media print {
+    html,body { width:1920px; height:auto; overflow:visible; background:#fff; cursor:auto; }
+    .deck-viewport { position:static; overflow:visible; background:#fff; }
+    .deck-stage { position:static; width:auto; height:auto; transform:none !important; background:none; }
+    .slide { position:relative; display:block !important; visibility:visible !important; opacity:1 !important; pointer-events:auto !important; width:1920px; height:1080px; break-after:page; page-break-after:always; }
+    .slide:last-child { break-after:auto; page-break-after:auto; }
+    .deck-controls,.custom-cursor,.cursor-dot,.page-indicator { display:none !important; }
+}
+@media (prefers-reduced-motion:reduce) { *,*::before,*::after { animation-duration:0.01ms !important; transition-duration:0.2s !important; } }
+
+/* === CUSTOM CURSOR === */
+.custom-cursor { position:fixed; width:24px; height:24px; border:2px solid var(--chili-red); border-radius:50%; pointer-events:none; z-index:10000; transform:translate(-50%,-50%); transition:width 0.2s var(--ease-expo),height 0.2s var(--ease-expo),border-color 0.2s,background 0.2s; box-shadow:0 0 20px var(--chili-red),inset 0 0 10px rgba(244,87,46,0.2); mix-blend-mode:screen; }
+.cursor-dot { position:fixed; width:6px; height:6px; background:var(--kimchi-lime); border-radius:50%; pointer-events:none; z-index:10001; transform:translate(-50%,-50%); box-shadow:0 0 12px var(--kimchi-lime); }
+.custom-cursor.hover { width:56px; height:56px; border-color:var(--kimchi-lime); background:rgba(187,227,59,0.1); box-shadow:0 0 40px var(--kimchi-lime); }
+
+/* === PAGE INDICATOR === */
+.page-indicator { position:fixed; right:28px; top:50%; transform:translateY(-50%); z-index:1000; display:flex; flex-direction:column; gap:8px; align-items:center; }
+.page-dot { width:8px; height:8px; border-radius:50%; border:1px solid var(--dim-gray); background:transparent; cursor:none; transition:all 0.4s var(--ease-back); }
+.page-dot:hover { border-color:var(--chili-red); transform:scale(1.4); }
+.page-dot.active { width:8px; height:36px; border-radius:4px; background:linear-gradient(180deg,var(--chili-red),var(--kimchi-lime)); border-color:transparent; box-shadow:0 0 16px var(--chili-red); animation:dotPulse 2s ease-in-out infinite; }
+.page-dot.completed { background:var(--kimchi-lime); border-color:transparent; box-shadow:0 0 6px var(--kimchi-lime); }
+@keyframes dotPulse { 0%,100%{box-shadow:0 0 16px var(--chili-red);} 50%{box-shadow:0 0 28px var(--chili-red),0 0 48px rgba(244,87,46,0.3);} }
+
+/* === SLIDE CHROME === */
+.slide-inner { position:relative; width:100%; height:100%; padding:80px; display:flex; flex-direction:column; }
+.section-tag { position:absolute; top:48px; left:80px; font-family:var(--font-mono); font-size:13px; letter-spacing:0.2em; text-transform:uppercase; padding:8px 18px; border:1px solid var(--hairline); border-radius:4px; background:rgba(18,18,26,0.8); backdrop-filter:blur(10px); display:flex; align-items:center; gap:10px; }
+.section-tag::before { content:""; width:8px; height:8px; border-radius:50%; display:inline-block; }
+.section-tag.setup { color:var(--kimchi-lime); border-color:rgba(187,227,59,0.4); } .section-tag.setup::before { background:var(--kimchi-lime); box-shadow:0 0 10px var(--kimchi-lime); }
+.section-tag.problem { color:var(--burn-red); border-color:rgba(255,95,87,0.4); } .section-tag.problem::before { background:var(--burn-red); box-shadow:0 0 10px var(--burn-red); }
+.section-tag.product { color:var(--chili-red); border-color:rgba(244,87,46,0.4); } .section-tag.product::before { background:var(--chili-red); box-shadow:0 0 10px var(--chili-red); }
+.section-tag.how { color:var(--kimchi-lime); border-color:rgba(187,227,59,0.4); } .section-tag.how::before { background:var(--kimchi-lime); box-shadow:0 0 10px var(--kimchi-lime); }
+.section-tag.governance { color:var(--alert-amber); border-color:rgba(254,188,46,0.4); } .section-tag.governance::before { background:var(--alert-amber); box-shadow:0 0 10px var(--alert-amber); }
+.section-tag.challenge { color:var(--chili-red); border-color:rgba(244,87,46,0.4); } .section-tag.challenge::before { background:var(--chili-red); box-shadow:0 0 10px var(--chili-red); }
+.section-tag.proof { color:var(--savings-green); border-color:rgba(40,200,64,0.4); } .section-tag.proof::before { background:var(--savings-green); box-shadow:0 0 10px var(--savings-green); }
+.section-tag.demo { color:var(--kimchi-lime); border-color:rgba(187,227,59,0.4); } .section-tag.demo::before { background:var(--kimchi-lime); box-shadow:0 0 10px var(--kimchi-lime); }
+.source-cite { position:absolute; bottom:40px; left:80px; font-family:var(--font-mono); font-size:14px; color:var(--muted-gray); }
+.source-cite::before { content:"▸ "; color:var(--chili-red); }
+
+/* === TYPOGRAPHY === */
+.slide-title { font-family:var(--font-display); font-size:60px; line-height:1.15; letter-spacing:-0.02em; font-weight:700; color:var(--off-white); }
+.slide-subtitle { font-size:24px; line-height:1.5; color:var(--muted-gray); font-weight:400; max-width:1100px; }
+.h2 { font-family:var(--font-display); font-size:44px; line-height:1.15; font-weight:700; }
+.h3 { font-size:26px; font-weight:600; line-height:1.25; }
+.body-text { font-size:20px; line-height:1.6; color:var(--off-white); }
+.body-lg { font-size:22px; line-height:1.5; color:var(--off-white); }
+.caption { font-size:15px; color:var(--muted-gray); line-height:1.4; }
+.mono { font-family:var(--font-mono); }
+.accent-red { color:var(--chili-red); } .accent-lime { color:var(--kimchi-lime); } .accent-green { color:var(--savings-green); } .accent-amber { color:var(--alert-amber); } .accent-burn { color:var(--burn-red); }
+
+/* === HERO NUMBERS === */
+.hero-number { font-family:var(--font-display); font-size:100px; line-height:1.1; letter-spacing:-0.02em; font-weight:700; font-variant-numeric:tabular-nums; }
+.big-stat { font-family:var(--font-display); font-size:64px; line-height:1.1; font-weight:700; font-variant-numeric:tabular-nums; }
+
+/* === CARDS === */
+.card { background:rgba(18,18,26,0.7); backdrop-filter:blur(12px); border:1px solid var(--hairline); border-radius:12px; padding:32px; }
+.card-accent-red { border-left:3px solid var(--chili-red); } .card-accent-lime { border-left:3px solid var(--kimchi-lime); } .card-accent-burn { border-left:3px solid var(--burn-red); } .card-accent-amber { border-left:3px solid var(--alert-amber); } .card-accent-green { border-left:3px solid var(--savings-green); }
+
+/* === TERMINAL === */
+.terminal { background:var(--panel-charcoal); border:1px solid var(--hairline); border-radius:12px; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,0.5); }
+.terminal-titlebar { height:40px; background:var(--panel-steel); display:flex; align-items:center; padding:0 16px; gap:8px; border-bottom:1px solid var(--hairline); }
+.terminal-dot { width:12px; height:12px; border-radius:50%; }
+.terminal-dot.red { background:var(--burn-red); } .terminal-dot.yellow { background:var(--alert-amber); } .terminal-dot.green { background:var(--savings-green); }
+.terminal-title { flex:1; text-align:center; font-family:var(--font-mono); font-size:14px; color:var(--muted-gray); }
+.terminal-body { padding:24px; font-family:var(--font-mono); font-size:18px; line-height:1.7; color:var(--off-white); }
+.terminal-body .prompt { color:var(--chili-red); } .terminal-body .cmd { color:var(--off-white); } .terminal-body .ok { color:var(--kimchi-lime); } .terminal-body .check { color:var(--savings-green); } .terminal-body .pending { color:var(--muted-gray); } .terminal-body .warn { color:var(--alert-amber); } .terminal-body .dim { color:var(--dim-gray); }
+.cursor::after { content:"▋"; color:var(--chili-red); animation:blink 1s steps(1) infinite; }
+@keyframes blink { 50%{opacity:0;} }
+
+/* === QR CODE === */
+.qr-container { background:var(--off-white); padding:20px; border-radius:12px; display:inline-block; }
+.qr-container img { width:200px; height:200px; display:block; }
+.qr-label { font-family:var(--font-mono); font-size:14px; color:var(--muted-gray); text-align:center; margin-top:12px; letter-spacing:0.1em; text-transform:uppercase; }
+
+/* === LOGO === */
+.kimchi-logo { display:inline-flex; align-items:center; gap:14px; }
+.kimchi-logo img { width:40px; height:40px; }
+.kimchi-logo-text { font-family:var(--font-display); font-size:22px; font-weight:700; color:var(--off-white); letter-spacing:-0.01em; }
+
+/* === GRID HELPER === */
+.grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:32px; }
+.grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:24px; }
+.grid-4 { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:24px; }
+
+/* === FLOW ARROW === */
+.flow-arrow { display:flex; align-items:center; justify-content:center; color:var(--chili-red); font-size:32px; }
+
+/* === BADGE === */
+.badge { display:inline-block; padding:4px 14px; border-radius:4px; font-family:var(--font-mono); font-size:13px; letter-spacing:0.1em; text-transform:uppercase; }
+.badge-red { background:var(--chili-red-dim); color:var(--chili-red); border:1px solid rgba(244,87,46,0.3); }
+.badge-lime { background:var(--kimchi-lime-dim); color:var(--kimchi-lime); border:1px solid rgba(187,227,59,0.3); }
+.badge-amber { background:rgba(254,188,46,0.15); color:var(--alert-amber); border:1px solid rgba(254,188,46,0.3); }
+
+/* === ENTRANCE ANIMATIONS === */
+.bp-reveal-fade { opacity:0; animation:bp-anim-fade 600ms ease forwards; }
+.bp-reveal-up { opacity:0; animation:bp-anim-up 700ms cubic-bezier(0.2,0.7,0.2,1) forwards; }
+.bp-reveal-left { opacity:0; animation:bp-anim-left 700ms cubic-bezier(0.2,0.7,0.2,1) forwards; }
+.bp-reveal-right { opacity:0; animation:bp-anim-right 700ms cubic-bezier(0.2,0.7,0.2,1) forwards; }
+.bp-reveal-scale { opacity:0; animation:bp-anim-scale 700ms cubic-bezier(0.2,0.7,0.2,1) forwards; }
+@keyframes bp-anim-fade { from{opacity:0;} to{opacity:1;} }
+@keyframes bp-anim-up { from{opacity:0;transform:translateY(24px);} to{opacity:1;transform:translateY(0);} }
+@keyframes bp-anim-left { from{opacity:0;transform:translateX(-32px);} to{opacity:1;transform:translateX(0);} }
+@keyframes bp-anim-right { from{opacity:0;transform:translateX(32px);} to{opacity:1;transform:translateX(0);} }
+@keyframes bp-anim-scale { from{opacity:0;transform:scale(0.94);} to{opacity:1;transform:scale(1);} }
+
+/* === COVER SLIDE SPECIAL === */
+.cover-bg { position:absolute; inset:0; background:radial-gradient(ellipse at 70% 40%, rgba(244,87,46,0.08), transparent 60%), radial-gradient(ellipse at 20% 80%, rgba(187,227,59,0.06), transparent 50%); }
+.cover-grid-pattern { position:absolute; inset:0; opacity:0.03; background-image:linear-gradient(var(--off-white) 1px,transparent 1px),linear-gradient(90deg,var(--off-white) 1px,transparent 1px); background-size:60px 60px; }
+</style>
+</head>
+<body>
+
+<div class="custom-cursor" id="cursor"></div>
+<div class="cursor-dot" id="cursorDot"></div>
+<div class="page-indicator" id="pageIndicator"></div>
+
+<div class="deck-viewport">
+<div class="deck-stage" id="stage">
+
+<!-- ============================================================
+     Slide 1 — Cover / Title
+     ============================================================ -->
+<section class="slide active" id="slide-0">
+<div class="cover-grid-pattern"></div>
+<div class="cover-bg"></div>
+<div class="slide-inner" style="justify-content:center;align-items:center;text-align:center;">
+    <div class="bp-reveal-scale" style="margin-bottom:48px;">
+        <div class="kimchi-logo" style="justify-content:center;">
+            <img src="data:image/png;base64,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" alt="Kimchi logo">
+            <span class="kimchi-logo-text">kimchi.dev</span>
+        </div>
+    </div>
+    <div class="bp-reveal-up" style="animation-delay:0.15s;">
+        <span class="badge badge-red">AI Agents Workshop · Bengaluru</span>
+    </div>
+    <h1 class="slide-title bp-reveal-up" style="font-size:84px;margin-top:32px;animation-delay:0.3s;">Ship Your First AI Agent</h1>
+    <p class="slide-subtitle bp-reveal-up" style="margin-top:24px;animation-delay:0.45s;text-align:center;">Build autonomous agents that reason, use tools, and complete real tasks — then deploy one live in 45 minutes.</p>
+    <div class="bp-reveal-up" style="margin-top:48px;animation-delay:0.6s;">
+        <p class="mono" style="color:var(--muted-gray);font-size:18px;">Kunal Das · Developer Advocate (APAC) · Kimchi.dev</p>
+        <p class="mono" style="color:var(--dim-gray);font-size:16px;margin-top:8px;">September 6, 2026 · OJone, Marathahalli · Bengaluru Tech Week 2026</p>
+    </div>
+    <div class="bp-reveal-fade" style="position:absolute;bottom:48px;left:50%;transform:translateX(-50%);animation-delay:0.8s;">
+        <p class="mono" style="color:var(--dim-gray);font-size:14px;letter-spacing:0.2em;">↑↓ NAVIGATE · ENTER SELECT</p>
+    </div>
+</div>
+</section>
+
+<!-- ============================================================
+     Slide 2 — Welcome + Setup
+     ============================================================ -->
+<section class="slide" id="slide-1">
+<div class="slide-inner">
+    <div class="section-tag setup">01 · Setup</div>
+    <h2 class="slide-title bp-reveal-up" style="margin-top:60px;">Get Ready in 60 Seconds</h2>
+    <p class="slide-subtitle bp-reveal-up" style="margin-top:16px;animation-delay:0.1s;">Install Kimchi, grab an API key, and register for the workshop.</p>
+    <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:40px;margin-top:48px;">
+        <div class="bp-reveal-up" style="animation-delay:0.2s;">
+            <div class="terminal">
+                <div class="terminal-titlebar">
+                    <span class="terminal-dot red"></span><span class="terminal-dot yellow"></span><span class="terminal-dot green"></span>
+                    <span class="terminal-title">~/workshop — bash</span>
+                </div>
+                <div class="terminal-body">
+                    <div><span class="prompt">$</span> <span class="cmd">curl -fsSL https://github.com/getkimchi/kimchi/releases/latest/download/install.sh | bash</span></div>
+                    <div class="dim">↓ Installing Kimchi CLI...</div>
+                    <div><span class="check">✓</span> <span class="ok">Kimchi installed</span> <span class="dim">v0.0.26</span></div>
+                    <div style="height:12px;"></div>
+                    <div><span class="prompt">$</span> <span class="cmd">kimchi setup</span></div>
+                    <div class="dim">↓ Enter your API key when prompted</div>
+                    <div><span class="check">✓</span> <span class="ok">Config saved to ~/.config/kimchi/config.json</span></div>
+                    <div style="height:12px;"></div>
+                    <div><span class="prompt">$</span> <span class="cmd">kimchi</span></div>
+                    <div class="ok">Welcome to Kimchi — pick a /ferment workflow</div>
+                    <div class="cursor"></div>
+                </div>
+            </div>
+            <p class="caption bp-reveal-fade" style="margin-top:16px;animation-delay:0.4s;">Don't have an API key? We are distributing keys at the front desk. BYOK (OpenAI, Anthropic, GitHub Copilot) also works.</p>
+        </div>
+        <div class="bp-reveal-right" style="animation-delay:0.3s;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+            <div class="card card-accent-lime" style="text-align:center;padding:40px;">
+                <h3 class="h3 accent-lime" style="margin-bottom:20px;">Scan to Register</h3>
+                <div class="qr-container">
+                    <img src="data:image/png;base64,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" alt="QR code for registration form">
+                </div>
+                <p class="qr-label">Registration Form</p>
+                <p class="body-text" style="margin-top:20px;font-size:18px;">Drop your email + GitHub handle.<br>We'll send materials and your API key.</p>
+            </div>
+        </div>
+    </div>
+</div>
+</section>
+
+<!-- ============================================================
+     Slide 3 — Why Agents Are Hard
+     ============================================================ -->
+<section class="slide" id="slide-2">
+<div class="slide-inner">
+    <div class="section-tag problem">02 · The Problem</div>
+    <h2 class="slide-title bp-reveal-up" style="margin-top:60px;">Building Agents That <span class="accent-burn">Actually Work</span> Is Hard</h2>
+    <p class="slide-subtitle bp-reveal-up" style="margin-top:16px;animation-delay:0.1s;">Everyone talks about AI agents. Almost no one ships one to production. Here's why.</p>
+    <div class="grid-3" style="margin-top:56px;">
+        <div class="card card-accent-burn bp-reveal-up" style="animation-delay:0.2s;">
+            <div class="mono accent-burn" style="font-size:14px;letter-spacing:0.15em;margin-bottom:16px;">PROBLEM 01</div>
+            <h3 class="h3" style="margin-bottom:16px;">Model Roulette</h3>
+            <p class="body-text" style="color:var(--muted-gray);">Which model? GPT? Claude? DeepSeek? Each has strengths, weaknesses, and very different costs. Picking wrong means bad output or blown budgets.</p>
+        </div>
+        <div class="card card-accent-amber bp-reveal-up" style="animation-delay:0.35s;">
+            <div class="mono accent-amber" style="font-size:14px;letter-spacing:0.15em;margin-bottom:16px;">PROBLEM 02</div>
+            <h3 class="h3" style="margin-bottom:16px;">Tool Integration Hell</h3>
+            <p class="body-text" style="color:var(--muted-gray);">Your agent needs to read files, call APIs, run code, search the web. Wiring each tool manually is fragile glue code that breaks on every update.</p>
+        </div>
+        <div class="card card-accent-red bp-reveal-up" style="animation-delay:0.5s;">
+            <div class="mono accent-red" style="font-size:14px;letter-spacing:0.15em;margin-bottom:16px;">PROBLEM 03</div>
+            <h3 class="h3" style="margin-bottom:16px;">No Guardrails</h3>
+            <p class="body-text" style="color:var(--muted-gray);">Agents run autonomously — but who watches the spend? Who reviews the output? Without governance, you get hallucinations, security holes, and surprise bills.</p>
+        </div>
+    </div>
+    <div class="bp-reveal-fade" style="margin-top:48px;animation-delay:0.7s;">
+        <p class="body-lg" style="text-align:center;color:var(--off-white);">The gap between a <span class="accent-burn">cool demo</span> and a <span class="accent-lime">shipped product</span> is governance, cost control, and quality review.</p>
+    </div>
+    <div class="source-cite">kimchi.dev</div>
+</div>
+</section>
+
+<!-- ============================================================
+     Slide 4 — What Is an AI Agent?
+     ============================================================ -->
+<section class="slide" id="slide-3">
+<div class="slide-inner">
+    <div class="section-tag product">03 · Fundamentals</div>
+    <h2 class="slide-title bp-reveal-up" style="margin-top:60px;">What Is an AI Agent?</h2>
+    <p class="slide-subtitle bp-reveal-up" style="margin-top:16px;animation-delay:0.1s;">Not a chatbot. Not an API call. An autonomous system that reasons, decides, and acts.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:32px;margin-top:56px;align-items:stretch;">
+        <div class="card bp-reveal-up" style="animation-delay:0.2s;text-align:center;">
+            <div style="font-size:48px;margin-bottom:20px;">🧠</div>
+            <h3 class="h3 accent-red" style="margin-bottom:16px;">LLM Brain</h3>
+            <p class="body-text" style="color:var(--muted-gray);">The reasoning engine. Takes context, decides what to do next, plans multi-step tasks. Not just generating text — choosing actions.</p>
+        </div>
+        <div class="card bp-reveal-up" style="animation-delay:0.35s;text-align:center;">
+            <div style="font-size:48px;margin-bottom:20px;">🔧</div>
+            <h3 class="h3 accent-lime" style="margin-bottom:16px;">Tools</h3>
+            <p class="body-text" style="color:var(--muted-gray);">File I/O, shell commands, web search, API calls, code execution. The agent picks the right tool for the job — no manual glue code.</p>
+        </div>
+        <div class="card bp-reveal-up" style="animation-delay:0.5s;text-align:center;">
+            <div style="font-size:48px;margin-bottom:20px;">🔁</div>
+            <h3 class="h3 accent-amber" style="margin-bottom:16px;">Reasoning Loop</h3>
+            <p class="body-text" style="color:var(--muted-gray);">Observe → Think → Act → Observe. The agent runs this loop autonomously until the task is done — or until guardrails stop it.</p>
+        </div>
+    </div>
+    <div class="bp-reveal-scale" style="margin-top:56px;animation-delay:0.65s;">
+        <div class="terminal" style="max-width:900px;margin:0 auto;">
+            <div class="terminal-body" style="text-align:center;font-size:20px;">
+                <span class="prompt">user:</span> <span class="cmd">Build me a portfolio website and deploy it</span><br>
+                <span style="height:8px;display:block;"></span>
+                <span class="ok">agent:</span> <span class="dim">→ plan milestones → scaffold project → write components → review quality → deploy</span> <span class="check">✓</span>
+            </div>
+        </div>
+    </div>
+    <div class="source-cite">docs.kimchi.dev</div>
+</div>
+</section>
+
+<!-- ============================================================
+     Slide 5 — Agent vs Chatbot: When to Use
+     ============================================================ -->
+<section class="slide" id="slide-4">
+<div class="slide-inner">
+    <div class="section-tag how">04 · When to Use</div>
+    <h2 class="slide-title bp-reveal-up" style="margin-top:60px;">Agent vs Chatbot — Know the Difference</h2>
+    <p class="slide-subtitle bp-reveal-up" style="margin-top:16px;animation-delay:0.1s;">Agents are powerful. They are also expensive and unpredictable. Use the right tool.</p>
+    <div class="grid-2" style="margin-top:56px;">
+        <div class="card card-accent-amber bp-reveal-left" style="animation-delay:0.2s;">
+            <div style="display:flex;align-items:center;gap:16px;margin-bottom:24px;">
+                <span style="font-size:36px;">💬</span>
+                <h3 class="h3 accent-amber">Chatbot</h3>
+            </div>
+            <p class="mono" style="color:var(--muted-gray);font-size:14px;margin-bottom:20px;letter-spacing:0.1em;">SINGLE TURN · NO TOOLS · NO AUTONOMY</p>
+            <div style="display:flex;flex-direction:column;gap:16px;">
+                <div><span class="accent-green">✓</span> <span class="body-text">Answering questions, generating text</span></div>
+                <div><span class="accent-green">✓</span> <span class="body-text">Summarization, translation, brainstorming</span></div>
+                <div><span class="accent-green">✓</span> <span class="body-text">Cheap, predictable, fast</span></div>
+                <div style="height:1px;background:var(--hairline);margin:8px 0;"></div>
+                <div><span class="accent-burn">✗</span> <span class="body-text" style="color:var(--muted-gray);">Cannot take actions or run code</span></div>
+                <div><span class="accent-burn">✗</span> <span class="body-text" style="color:var(--muted-gray);">No memory across sessions</span></div>
+            </div>
+        </div>
+        <div class="card card-accent-lime bp-reveal-right" style="animation-delay:0.35s;">
+            <div style="display:flex;align-items:center;gap:16px;margin-bottom:24px;">
+                <span style="font-size:36px;">🤖</span>
+                <h3 class="h3 accent-lime">Agent</h3>
+            </div>
+            <p class="mono" style="color:var(--muted-gray);font-size:14px;margin-bottom:20px;letter-spacing:0.1em;">MULTI-STEP · TOOL USE · AUTONOMOUS</p>
+            <div style="display:flex;flex-direction:column;gap:16px;">
+                <div><span class="accent-green">✓</span> <span class="body-text">Build, test, and deploy real software</span></div>
+                <div><span class="accent-green">✓</span> <span class="body-text">Multi-step tasks with self-correction</span></div>
+                <div><span class="accent-green">✓</span> <span class="body-text">Uses tools, reads files, runs commands</span></div>
+                <div style="height:1px;background:var(--hairline);margin:8px 0;"></div>
+                <div><span class="accent-burn">!</span> <span class="body-text" style="color:var(--muted-gray);">Needs guardrails — spend caps, review</span></div>
+                <div><span class="accent-burn">!</span> <span class="body-text" style="color:var(--muted-gray);">More tokens, more cost, less predictable</span></div>
+            </div>
+        </div>
+    </div>
+    <div class="bp-reveal-fade" style="margin-top:40px;animation-delay:0.55s;">
+        <p class="body-lg" style="text-align:center;color:var(--muted-gray);"><span class="accent-red">Rule of thumb:</span> If the task needs one response, use a chatbot. If it needs a plan, tools, and multiple steps — use an agent.</p>
+    </div>
+    <div class="source-cite">docs.kimchi.dev/concepts/agents</div>
+</div>
+</section>
+
+<!-- ============================================================
+     Slide 6 — What Is Kimchi?
+     ============================================================ -->
+<section class="slide" id="slide-5">
+<div class="slide-inner">
+    <div class="section-tag product">05 · The Platform</div>
+    <h2 class="slide-title bp-reveal-up" style="margin-top:60px;">What Is <span class="accent-red">Kimchi</span>?</h2>
+    <p class="slide-subtitle bp-reveal-up" style="margin-top:16px;animation-delay:0.1s;">A CLI coding agent, inference layer, and spend console — all in one. Powered by open-source models.</p>
+    <div class="grid-4" style="margin-top:56px;">
+        <div class="card card-accent-red bp-reveal-up" style="animation-delay:0.2s;">
+            <div class="mono accent-red" style="font-size:13px;letter-spacing:0.15em;margin-bottom:16px;">PILLAR 01</div>
+            <h3 class="h3" style="margin-bottom:12px;">Models</h3>
+            <p class="body-text" style="color:var(--muted-gray);font-size:18px;">Multi-model orchestration. 50+ models. No lock-in. Open-source first.</p>
+        </div>
+        <div class="card card-accent-lime bp-reveal-up" style="animation-delay:0.3s;">
+            <div class="mono accent-lime" style="font-size:13px;letter-spacing:0.15em;margin-bottom:16px;">PILLAR 02</div>
+            <h3 class="h3" style="margin-bottom:12px;">Data</h3>
+            <p class="body-text" style="color:var(--muted-gray);font-size:18px;">VPC deployment. Data residency. Open-weight models that can't call home.</p>
+        </div>
+        <div class="card card-accent-amber bp-reveal-up" style="animation-delay:0.4s;">
+            <div class="mono accent-amber" style="font-size:13px;letter-spacing:0.15em;margin-bottom:16px;">PILLAR 03</div>
+            <h3 class="h3" style="margin-bottom:12px;">Quality</h3>
+            <p class="body-text" style="color:var(--muted-gray);font-size:18px;">Every task graded before it ships. Evaluator role self-verifies each milestone.</p>
+        </div>
+        <div class="card card-accent-green bp-reveal-up" style="animation-delay:0.5s;">
+            <div class="mono accent-green" style="font-size:13px;letter-spacing:0.15em;margin-bottom:16px;">PILLAR 04</div>
+            <h3 class="h3" style="margin-bottom:12px;">Spend</h3>
+            <p class="body-text" style="color:var(--muted-gray);font-size:18px;">Per-developer, per-team, per-tag cost attribution. Hard budget caps that enforce.</p>
+        </div>
+    </div>
+    <div class="bp-reveal-scale" style="margin-top:48px;animation-delay:0.65s;">
+        <div class="terminal" style="max-width:700px;margin:0 auto;">
+            <div class="terminal-body" style="text-align:center;font-size:22px;">
+                <span class="dim">The governed AI coding platform.</span><br>
+                <span class="ok">Build with freedom. Start in 60 seconds.</span>
+            </div>
+        </div>
+    </div>
+    <div class="source-cite">kimchi.dev</div>
+</div>
+</section>
+
+<!-- ============================================================
+     Slide 7 — Multi-Model Orchestration
+     ============================================================ -->
+<section class="slide" id="slide-6">
+<div class="slide-inner">
+    <div class="section-tag how">06 · How It Works</div>
+    <h2 class="slide-title bp-reveal-up" style="margin-top:60px;">Multi-Model Orchestration</h2>
+    <p class="slide-subtitle bp-reveal-up" style="margin-top:16px;animation-delay:0.1s;">Different models for different jobs. Kimchi routes automatically — you get the best output at the lowest cost.</p>
+    <div style="display:flex;align-items:center;justify-content:center;gap:24px;margin-top:64px;">
+        <div class="card card-accent-red bp-reveal-left" style="animation-delay:0.2s;text-align:center;width:260px;">
+            <div class="mono accent-red" style="font-size:14px;letter-spacing:0.15em;margin-bottom:12px;">ROLE</div>
+            <h3 class="h3 accent-red" style="margin-bottom:16px;">Orchestrator</h3>
+            <p class="body-text" style="color:var(--muted-gray);font-size:18px;">Main loop. Classifies the task, decides who does what, delegates.</p>
+            <p class="mono" style="color:var(--dim-gray);font-size:13px;margin-top:16px;">e.g. kimi-k2.7</p>
+        </div>
+        <div class="flow-arrow bp-reveal-fade" style="animation-delay:0.35s;">→</div>
+        <div class="card card-accent-lime bp-reveal-up" style="animation-delay:0.4s;text-align:center;width:260px;">
+            <div class="mono accent-lime" style="font-size:14px;letter-spacing:0.15em;margin-bottom:12px;">ROLE</div>
+            <h3 class="h3 accent-lime" style="margin-bottom:16px;">Builder</h3>
+            <p class="body-text" style="color:var(--muted-gray);font-size:18px;">Writes the code. Implements features, fixes bugs, runs tests.</p>
+            <p class="mono" style="color:var(--dim-gray);font-size:13px;margin-top:16px;">e.g. minimax-m3</p>
+        </div>
+        <div class="flow-arrow bp-reveal-fade" style="animation-delay:0.55s;">→</div>
+        <div class="card card-accent-amber bp-reveal-right" style="animation-delay:0.6s;text-align:center;width:260px;">
+            <div class="mono accent-amber" style="font-size:14px;letter-spacing:0.15em;margin-bottom:12px;">ROLE</div>
+            <h3 class="h3 accent-amber" style="margin-bottom:16px;">Reviewer</h3>
+            <p class="body-text" style="color:var(--muted-gray);font-size:18px;">Grades every output. Catches bugs, enforces quality before it ships.</p>
+            <p class="mono" style="color:var(--dim-gray);font-size:13px;margin-top:16px;">e.g. claude-sonnet</p>
+        </div>
+    </div>
+    <div class="bp-reveal-fade" style="margin-top:56px;animation-delay:0.75s;">
+        <div class="grid-3" style="max-width:1100px;margin:0 auto;">
+            <div style="text-align:center;"><span class="big-stat accent-lime">1/13</span><p class="caption" style="margin-top:8px;">Cost of frontier models</p></div>
+            <div style="text-align:center;"><span class="big-stat accent-red">50+</span><p class="caption" style="margin-top:8px;">Models supported</p></div>
+            <div style="text-align:center;"><span class="big-stat accent-amber">0</span><p class="caption" style="margin-top:8px;">Lock-in. Ever.</p></div>
+        </div>
+    </div>
+    <div class="source-cite">kimchi.dev · app.kimchi.dev</div>
+</div>
+</section>
+
+<!-- ============================================================
+     Slide 8 — /ferment Workflow
+     ============================================================ -->
+<section class="slide" id="slide-7">
+<div class="slide-inner">
+    <div class="section-tag how">07 · Feature Deep Dive</div>
+    <h2 class="slide-title bp-reveal-up" style="margin-top:60px;"><span class="accent-red">/ferment</span> — Multi-Session Projects</h2>
+    <p class="slide-subtitle bp-reveal-up" style="margin-top:16px;animation-delay:0.1s;">Break a task into milestones, self-evaluate, and deliver — with minimal interruptions. State persists across sessions.</p>
+    <div style="display:grid;grid-template-columns:1fr 1.3fr;gap:40px;margin-top:48px;">
+        <div class="bp-reveal-left" style="animation-delay:0.2s;">
+            <div style="display:flex;flex-direction:column;gap:20px;">
+                <div class="card card-accent-red" style="padding:24px;">
+                    <div class="mono accent-red" style="font-size:13px;margin-bottom:8px;">STEP 01</div>
+                    <h3 class="h3" style="font-size:22px;margin-bottom:8px;">Plan</h3>
+                    <p class="body-text" style="color:var(--muted-gray);font-size:18px;">Agent breaks the goal into structured milestones with clear acceptance criteria.</p>
+                </div>
+                <div class="card card-accent-lime" style="padding:24px;">
+                    <div class="mono accent-lime" style="font-size:13px;margin-bottom:8px;">STEP 02</div>
+                    <h3 class="h3" style="font-size:22px;margin-bottom:8px;">Build + Self-Evaluate</h3>
+                    <p class="body-text" style="color:var(--muted-gray);font-size:18px;">Each milestone is built, then graded by the reviewer role before moving on.</p>
+                </div>
+                <div class="card card-accent-green" style="padding:24px;">
+                    <div class="mono accent-green" style="font-size:13px;margin-bottom:8px;">STEP 03</div>
+                    <h3 class="h3" style="font-size:22px;margin-bottom:8px;">Deliver</h3>
+                    <p class="body-text" style="color:var(--muted-gray);font-size:18px;">Quality-verified output. State saved — resume any session, pick up where you left off.</p>
+                </div>
+            </div>
+        </div>
+        <div class="bp-reveal-right" style="animation-delay:0.35s;">
+            <div class="terminal">
+                <div class="terminal-titlebar">
+                    <span class="terminal-dot red"></span><span class="terminal-dot yellow"></span><span class="terminal-dot green"></span>
+                    <span class="terminal-title">~/my-portfolio — kimchi</span>
+                </div>
+                <div class="terminal-body" style="font-size:16px;">
+                    <div><span class="prompt">$</span> <span class="cmd">kimchi --ferment "Build a portfolio website"</span></div>
+                    <div class="dim">↓ Analyzing task...</div>
+                    <div style="height:8px;"></div>
+                    <div><span class="warn">▸ MILESTONE 1:</span> <span class="cmd">Scaffold project structure</span></div>
+                    <div class="dim">  Planning files, components, routing...</div>
+                    <div><span class="check">✓</span> <span class="ok">Complete — index.html, style.css, app.js</span></div>
+                    <div style="height:8px;"></div>
+                    <div><span class="warn">▸ MILESTONE 2:</span> <span class="cmd">Build hero + about sections</span></div>
+                    <div class="dim">  Writing components...</div>
+                    <div><span class="check">✓</span> <span class="ok">Reviewer grade: 92/100</span></div>
+                    <div style="height:8px;"></div>
+                    <div><span class="warn">▸ MILESTONE 3:</span> <span class="cmd">Add projects gallery</span></div>
+                    <div class="dim">  Building responsive grid...</div>
+                    <div><span class="pending">● In progress...</span></div>
+                    <div class="cursor"></div>
+                </div>
+            </div>
+            <p class="caption bp-reveal-fade" style="margin-top:16px;animation-delay:0.5s;">State persists in .kimchi/ferments/ — close the terminal, come back tomorrow, pick up exactly here.</p>
+        </div>
+    </div>
+    <div class="source-cite">docs.kimchi.dev/ferment</div>
+</div>
+</section>
+
+<!-- ============================================================
+     Slide 9 — Tool Use & Guardrails
+     ============================================================ -->
+<section class="slide" id="slide-8">
+<div class="slide-inner">
+    <div class="section-tag governance">08 · Governance</div>
+    <h2 class="slide-title bp-reveal-up" style="margin-top:60px;">Tools + Guardrails = <span class="accent-lime">Trust</span></h2>
+    <p class="slide-subtitle bp-reveal-up" style="margin-top:16px;animation-delay:0.1s;">Agents need tools to be useful. They need guardrails to be safe. Kimchi gives you both.</p>
+    <div class="grid-2" style="margin-top:56px;">
+        <div class="bp-reveal-left" style="animation-delay:0.2s;">
+            <h3 class="h3 accent-lime" style="margin-bottom:24px;">Built-in Tools</h3>
+            <div style="display:flex;flex-direction:column;gap:16px;">
+                <div class="card" style="padding:20px;display:flex;align-items:center;gap:16px;">
+                    <span style="font-size:24px;">📁</span>
+                    <div><span class="body-text" style="font-weight:600;">File I/O</span><p class="caption">Read, write, edit project files</p></div>
+                </div>
+                <div class="card" style="padding:20px;display:flex;align-items:center;gap:16px;">
+                    <span style="font-size:24px;">🖥️</span>
+                    <div><span class="body-text" style="font-weight:600;">Shell Commands</span><p class="caption">Run builds, tests, git, npm</p></div>
+                </div>
+                <div class="card" style="padding:20px;display:flex;align-items:center;gap:16px;">
+                    <span style="font-size:24px;">🔌</span>
+                    <div><span class="body-text" style="font-weight:600;">MCP Servers</span><p class="caption">Connect any external tool or API</p></div>
+                </div>
+                <div class="card" style="padding:20px;display:flex;align-items:center;gap:16px;">
+                    <span style="font-size:24px;">🌐</span>
+                    <div><span class="body-text" style="font-weight:600;">Web Search</span><p class="caption">Research docs, APIs, current info</p></div>
+                </div>
+            </div>
+        </div>
+        <div class="bp-reveal-right" style="animation-delay:0.35s;">
+            <h3 class="h3 accent-amber" style="margin-bottom:24px;">Guardrails</h3>
+            <div style="display:flex;flex-direction:column;gap:16px;">
+                <div class="card card-accent-amber" style="padding:20px;">
+                    <span class="body-text" style="font-weight:600;">💰 Spend Caps</span>
+                    <p class="body-text" style="color:var(--muted-gray);font-size:18px;margin-top:6px;">Hard budget limits at user, team, API key, and org level. Enforces, not just alerts.</p>
+                </div>
+                <div class="card card-accent-red" style="padding:20px;">
+                    <span class="body-text" style="font-weight:600;">🔐 Permissions</span>
+                    <p class="body-text" style="color:var(--muted-gray);font-size:18px;margin-top:6px;">Approve or deny tool calls before execution. Fine-grained control over what the agent can touch.</p>
+                </div>
+                <div class="card card-accent-lime" style="padding:20px;">
+                    <span class="body-text" style="font-weight:600;">✅ Quality Review</span>
+                    <p class="body-text" style="color:var(--muted-gray);font-size:18px;margin-top:6px;">Reviewer model grades every milestone. Nothing ships without a passing score.</p>
+                </div>
+                <div class="card card-accent-green" style="padding:20px;">
+                    <span class="body-text" style="font-weight:600;">📊 Cost Attribution</span>
+                    <p class="body-text" style="color:var(--muted-gray);font-size:18px;margin-top:6px;">Tag sessions with /tags. See exactly who spent what, on which model, for which project.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="source-cite">docs.kimchi.dev/governance</div>
+</div>
+</section>
+
+<!-- ============================================================
+     Slide 10 — Live Demo
+     ============================================================ -->
+<section class="slide" id="slide-9">
+<div class="slide-inner">
+    <div class="section-tag demo">09 · Live Demo</div>
+    <h2 class="slide-title bp-reveal-up" style="margin-top:60px;">Watch It Build</h2>
+    <p class="slide-subtitle bp-reveal-up" style="margin-top:16px;animation-delay:0.1s;">One prompt. Multi-model orchestration. /ferment workflow. Quality-reviewed output.</p>
+    <div class="bp-reveal-scale" style="margin-top:48px;animation-delay:0.2s;">
+        <div class="terminal" style="max-width:1100px;margin:0 auto;">
+            <div class="terminal-titlebar">
+                <span class="terminal-dot red"></span><span class="terminal-dot yellow"></span><span class="terminal-dot green"></span>
+                <span class="terminal-title">~/demo-portfolio — kimchi</span>
+            </div>
+            <div class="terminal-body" style="font-size:17px;">
+                <div><span class="prompt">›</span> <span class="cmd">Build me a portfolio website with a hero section, about me, and a projects gallery. Deploy-ready.</span></div>
+                <div style="height:12px;"></div>
+                <div class="dim">→ Orchestrator: classifying task... routing to builder (minimax-m3)</div>
+                <div style="height:8px;"></div>
+                <div><span class="warn">▸ MILESTONE 1/4:</span> <span class="cmd">Scaffold project</span></div>
+                <div class="dim">  Creating index.html, styles.css, script.js...</div>
+                <div><span class="check">✓</span> <span class="ok">Done · Reviewer: 95/100</span></div>
+                <div style="height:8px;"></div>
+                <div><span class="warn">▸ MILESTONE 2/4:</span> <span class="cmd">Hero section</span></div>
+                <div class="dim">  Building responsive hero with gradient background...</div>
+                <div><span class="check">✓</span> <span class="ok">Done · Reviewer: 91/100</span></div>
+                <div style="height:8px;"></div>
+                <div><span class="warn">▸ MILESTONE 3/4:</span> <span class="cmd">About + Projects gallery</span></div>
+                <div class="dim">  Writing bio section, building card grid...</div>
+                <div><span class="check">✓</span> <span class="ok">Done · Reviewer: 88/100</span></div>
+                <div style="height:8px;"></div>
+                <div><span class="warn">▸ MILESTONE 4/4:</span> <span class="cmd">Polish + responsive</span></div>
+                <div class="dim">  Adding mobile breakpoints, smooth scroll, animations...</div>
+                <div><span class="check">✓</span> <span class="ok">Done · Reviewer: 93/100</span></div>
+                <div style="height:12px;"></div>
+                <div class="ok">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</div>
+                <div><span class="ok">✓ BUILD COMPLETE</span> <span class="dim">· 4/4 milestones · avg score 92/100</span></div>
+                <div class="dim">  Tokens: 12,847 · Cost: $0.04 · Time: 2m 14s</div>
+                <div class="cursor"></div>
+            </div>
+        </div>
+    </div>
+    <p class="caption bp-reveal-fade" style="text-align:center;margin-top:24px;animation-delay:0.4s;">That is what you are about to do. Your turn.</p>
+    <div class="source-cite">app.kimchi.dev</div>
+</div>
+</section>
+
+<!-- ============================================================
+     Slide 11 — The Challenge: "Ship It"
+     ============================================================ -->
+<section class="slide" id="slide-10">
+<div class="slide-inner">
+    <div class="section-tag challenge">10 · Challenge</div>
+    <h2 class="slide-title bp-reveal-up" style="margin-top:60px;">The <span class="accent-red">Ship It</span> Challenge</h2>
+    <p class="slide-subtitle bp-reveal-up" style="margin-top:16px;animation-delay:0.1s;">Build a portfolio website with Kimchi. Deploy it live. Win Kimchi swag.</p>
+    <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:40px;margin-top:48px;">
+        <div class="bp-reveal-left" style="animation-delay:0.2s;">
+            <div class="card card-accent-red" style="padding:36px;">
+                <h3 class="h3 accent-red" style="margin-bottom:24px;">The Rules</h3>
+                <div style="display:flex;flex-direction:column;gap:18px;">
+                    <div style="display:flex;gap:16px;align-items:flex-start;">
+                        <span class="mono accent-red" style="font-size:24px;font-weight:700;">01</span>
+                        <div><span class="body-text" style="font-weight:600;">Build a portfolio website</span><p class="body-text" style="color:var(--muted-gray);font-size:18px;">Hero, about, projects gallery. Your portfolio, your design.</p></div>
+                    </div>
+                    <div style="display:flex;gap:16px;align-items:flex-start;">
+                        <span class="mono accent-red" style="font-size:24px;font-weight:700;">02</span>
+                        <div><span class="body-text" style="font-weight:600;">Use Kimchi</span><p class="body-text" style="color:var(--muted-gray);font-size:18px;">/ferment, multi-model, tools — use what you learned.</p></div>
+                    </div>
+                    <div style="display:flex;gap:16px;align-items:flex-start;">
+                        <span class="mono accent-red" style="font-size:24px;font-weight:700;">03</span>
+                        <div><span class="body-text" style="font-weight:600;">Deploy it live</span><p class="body-text" style="color:var(--muted-gray);font-size:18px;">Vercel or GitHub Pages. Must be a real URL.</p></div>
+                    </div>
+                    <div style="display:flex;gap:16px;align-items:flex-start;">
+                        <span class="mono accent-red" style="font-size:24px;font-weight:700;">04</span>
+                        <div><span class="body-text" style="font-weight:600;">Submit before 10:50 AM</span><p class="body-text" style="color:var(--muted-gray);font-size:18px;">Scan the QR → fill the form with your live URL + repo.</p></div>
+                    </div>
+                </div>
+                <div style="margin-top:32px;padding-top:24px;border-top:1px solid var(--hairline);">
+                    <div style="display:flex;align-items:center;gap:16px;">
+                        <span style="font-size:32px;">🏆</span>
+                        <div><span class="h3 accent-lime">Prize: Kimchi Swag</span><p class="caption">Stickers, t-shirt, and bragging rights. Judged on design, functionality, and creative use of Kimchi features.</p></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="bp-reveal-right" style="animation-delay:0.35s;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+            <div class="card card-accent-lime" style="text-align:center;padding:40px;">
+                <h3 class="h3 accent-lime" style="margin-bottom:20px;">Submit Your Project</h3>
+                <div class="qr-container">
+                    <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAcIAAAHCCAIAAADzel4SAAAKJ0lEQVR4nO3dO44lxxFAUY0wRhvji/tfHbULubQSwlwmI/L1OW7j/aqqL9IJxI+vr1//AuB3/Xv6CwC8TUYBEhkFSGQUIJFRgERGARIZBUhkFCCRUYBERgESGQVIZBQgkVGAREYBEhkFSGQUIJFRgERGARIZBUh+lhf/+ed//67vscQff/zn8Nfz77332qLco51X495Td+9zd16N8tR9t//9M6dRgERGARIZBUhkFCCRUYBERgESGQVIZBQgkVGAJE0xnd2bzCmmZlGm7LwLZy9Oi5V3fvEene38Rff+Q51GARIZBUhkFCCRUYBERgESGQVIZBQgkVGAREYBkotTTGdTG3Xumdpss3Nz0b133rm56MV3nvLiM3nmNAqQyChAIqMAiYwCJDIKkMgoQCKjAImMAiQyCpCMTTG9aOc8ydTmonuzKOWdd04Tne3c4sX/z2kUIJFRgERGARIZBUhkFCCRUYBERgESGQVIZBQgMcW0wr1Zoxe9+IvubeLa+c78ldMoQCKjAImMAiQyCpDIKEAiowCJjAIkMgqQyChAMjbF9HkTFDs3+Zy/1b3v/OLVMPPzz/i8K+k0CpDIKEAiowCJjAIkMgqQyChAIqMAiYwCJDIKkFycYro3qfJ57k3X3JvMefE73zP1nXde5+/2v+80CpDIKEAiowCJjAIkMgqQyChAIqMAiYwCJDIKkPz4+vo1/R2ecW82Y2pz0U4vzjhN3aOdM13fjdMoQCKjAImMAiQyCpDIKEAiowCJjAIkMgqQyChAknYxfd7+mXumvtXOjUnn107do/KLpp72e6/d6d6GqPLOTqMAiYwCJDIKkMgoQCKjAImMAiQyCpDIKEAiowBJmmI6KxMUZWLk3qzC1PTU1DuX1+6cNJt6NoqdT/tOU9/ZaRQgkVGAREYBEhkFSGQUIJFRgERGARIZBUhkFCBJU0z39s+c3dtOM/WLPm+a6N6V3Llr60Uv7lI7m3o2nEYBEhkFSGQUIJFRgERGARIZBUhkFCCRUYBERgGSH19fv377xTsngu7ZOdWzc27n87YA7ZzZ27kBbGrj2dQ7O40CJDIKkMgoQCKjAImMAiQyCpDIKEAiowCJjAIkF6eY7nlxcuPF2QxTW/+/qbtf7Ly/95hiAlhKRgESGQVIZBQgkVGAREYBEhkFSGQUIJFRgGRsF9PnTQTtnK75PDsnvsrn3rNzhu3z5u6cRgESGQVIZBQgkVGAREYBEhkFSGQUIJFRgERGAZKf5cVTUz0751g+b2rr7PNmfs5efJ7vvba884t7q86cRgESGQVIZBQgkVGAREYBEhkFSGQUIJFRgERGAZKxXUzlnc92zjmcvfh7X9xrtPNa7bTzWu2cYHQaBUhkFCCRUYBERgESGQVIZBQgkVGAREYBEhkFSNIuprPP212z04tTHy/u25na4lVMPe3lWr343+00CpDIKEAiowCJjAIkMgqQyChAIqMAiYwCJDIKkKQppp3TJmdTszf3Ngid3/nzprbOdm4QKq+994vuPbFn9/6Ppn6R0yhAIqMAiYwCJDIKkMgoQCKjAImMAiQyCpDIKEBycRdTsXNWoZiarrl3rab27by4q+fs3tzOzuv84vTjmdMoQCKjAImMAiQyCpDIKEAiowCJjAIkMgqQyChAMjbFNLWPpbg383PP1DzY5+3befGZfHFe6MUyOI0CJDIKkMgoQCKjAImMAiQyCpDIKEAiowCJjAIkP76+fv32i+/NDLy4M+eendf53jTRzl90z9TTPjUR9OKc0pnTKEAiowCJjAIkMgqQyChAIqMAiYwCJDIKkMgoQJKmmM5e3Iqz8zvf893mWKamtl586l58Ys/uPc9OowCJjAIkMgqQyChAIqMAiYwCJDIKkMgoQCKjAMnP8uKd+3Z2zrG8OPVR3JsYufeL7j05O3dene38L9vJaRQgkVGAREYBEhkFSGQUIJFRgERGARIZBUhkFCBJu5h27pAp7/yie/NCL35ucW+yjr+a2gB2j9MoQCKjAImMAiQyCpDIKEAiowCJjAIkMgqQyChAknYxFTt3BJ1NbcWZ2lt1z86Zn3KtXpwW27lLrbx26nl2GgVIZBQgkVGAREYBEhkFSGQUIJFRgERGARIZBUjSLqazqUmVqZmfz9tNdDZ1Nabu0edNqb04H7XzLjiNAiQyCpDIKEAiowCJjAIkMgqQyChAIqMAiYwCJGO7mO6Z2jCzc8apmJonmZrL2jl7s/PJmfpWU7NVZ06jAImMAiQyCpDIKEAiowCJjAIkMgqQyChAIqMAycVdTC/6vImRnZM597y412jnlTzbuTFpaoLRaRQgkVGAREYBEhkFSGQUIJFRgERGARIZBUhkFCBJU0wvziqUz33Rzgmos6lpIv7qxSs59Z2dRgESGQVIZBQgkVGAREYBEhkFSGQUIJFRgERGAZKf9966TJtMzc/cM7VvZ2rmZ+cOqJ2/9+zFHVA7n/Z7nEYBEhkFSGQUIJFRgERGARIZBUhkFCCRUYBERgGStIupmJpzuGfn9FQxNYn04tzOzs8927lrq5ia2XMaBUhkFCCRUYBERgESGQVIZBQgkVGAREYBEhkFSC7uYppyb5qo7I+6N+Vyb3JjapvWi1MuU1ue7n3ulJ3zUWdOowCJjAIkMgqQyChAIqMAiYwCJDIKkMgoQCKjAEnaxTS1y+VsaiKoeHHa5PPu/tl3u0c7Tc2SnTmNAiQyCpDIKEAiowCJjAIkMgqQyChAIqMAiYwCJGmK6bt5ce/N1I6gz3vnndNxO69z+dwp5fc6jQIkMgqQyChAIqMAiYwCJDIKkMgoQCKjAImMAiQ/y4t3TiMU92ZCyueWaZOdMz9T13nK512Ne7/o3nN171o5jQIkMgqQyChAIqMAiYwCJDIKkMgoQCKjAImMAiRpF5PdRH/X5+704tXY+dQVO6fjiqndU/c4jQIkMgqQyChAIqMAiYwCJDIKkMgoQCKjAImMAiRpF1Px4hzL1Hee2j8zNeUydQe/25NzNjV3N7VPqdx9p1GAREYBEhkFSGQUIJFRgERGARIZBUhkFCCRUYBkbIrpRVPzFUWZzTj/op07gqbuws7pmqnPvTctdu9bFU6jAImMAiQyCpDIKEAiowCJjAIkMgqQyChAIqMAiSmmf8iLe36mTM3t7Nw+NPW5ZRJp5wTUPU6jAImMAiQyCpDIKEAiowCJjAIkMgqQyChAIqMAydgU085phGLn5Mbn7QjaOeVSrvPUPZraefV5E31OowCJjAIkMgqQyChAIqMAiYwCJDIKkMgoQCKjAMmPr69fv/3i77YFaOeunp1zSlMTMmf3pnrOdv6inZ+7cxrwzGkUIJFRgERGARIZBUhkFCCRUYBERgESGQVIZBQgSVNMADiNAiQyCpDIKEAiowCJjAIkMgqQyChAIqMAiYwCJDIKkMgoQCKjAImMAiQyCpDIKEAiowCJjAIkMgqQyChA8j9dHFJLfTFyXgAAAABJRU5ErkJggg==" alt="QR code for challenge submission form">
+                </div>
+                <p class="qr-label">Submission Form</p>
+                <p class="body-text" style="margin-top:20px;font-size:18px;">Scan when your site is live.<br>Need: deployed URL + repo link.</p>
+            </div>
+        </div>
+    </div>
+</div>
+</section>
+
+<!-- ============================================================
+     Slide 12 — Deploy Quick-Start
+     ============================================================ -->
+<section class="slide" id="slide-11">
+<div class="slide-inner">
+    <div class="section-tag setup">11 · Deploy</div>
+    <h2 class="slide-title bp-reveal-up" style="margin-top:60px;">Deploy in 60 Seconds</h2>
+    <p class="slide-subtitle bp-reveal-up" style="margin-top:16px;animation-delay:0.1s;">Two paths. Pick one. Get a live URL.</p>
+    <div class="grid-2" style="margin-top:56px;">
+        <div class="bp-reveal-left" style="animation-delay:0.2s;">
+            <div class="card card-accent-lime" style="padding:32px;">
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
+                    <span style="font-size:28px;">▲</span>
+                    <h3 class="h3 accent-lime">Vercel</h3>
+                    <span class="badge badge-lime">Fastest</span>
+                </div>
+                <div class="terminal">
+                    <div class="terminal-body" style="font-size:16px;">
+                        <div><span class="prompt">$</span> <span class="cmd">npm i -g vercel</span></div>
+                        <div><span class="prompt">$</span> <span class="cmd">vercel</span></div>
+                        <div class="dim">? Set up and deploy? → Y</div>
+                        <div class="dim">? Project name? → my-portfolio</div>
+                        <div class="dim">? Framework? → Other / Static</div>
+                        <div style="height:8px;"></div>
+                        <div><span class="check">✓</span> <span class="ok">Deployed!</span></div>
+                        <div class="ok">→ https://my-portfolio.vercel.app</div>
+                        <div class="cursor"></div>
+                    </div>
+                </div>
+                <p class="caption" style="margin-top:16px;">Zero config for static sites. Just run <span class="mono accent-lime">vercel</span> in your project folder.</p>
+            </div>
+        </div>
+        <div class="bp-reveal-right" style="animation-delay:0.35s;">
+            <div class="card card-accent-amber" style="padding:32px;">
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
+                    <span style="font-size:28px;">🐙</span>
+                    <h3 class="h3 accent-amber">GitHub Pages</h3>
+                    <span class="badge badge-amber">Free Forever</span>
+                </div>
+                <div class="terminal">
+                    <div class="terminal-body" style="font-size:16px;">
+                        <div><span class="prompt">$</span> <span class="cmd">git init && git add . && git commit -m "portfolio"</span></div>
+                        <div><span class="prompt">$</span> <span class="cmd">gh repo create my-portfolio --public --source=. --push</span></div>
+                        <div><span class="prompt">$</span> <span class="cmd">gh repo edit --enable-website</span></div>
+                        <div style="height:8px;"></div>
+                        <div><span class="check">✓</span> <span class="ok">GitHub Pages enabled</span></div>
+                        <div class="ok">→ https://user.github.io/my-portfolio</div>
+                        <div class="cursor"></div>
+                    </div>
+                </div>
+                <p class="caption" style="margin-top:16px;">Push to GitHub, enable Pages in repo settings. Or use <span class="mono accent-amber">gh repo edit --enable-website</span>.</p>
+            </div>
+        </div>
+    </div>
+    <div class="bp-reveal-fade" style="margin-top:32px;animation-delay:0.5s;">
+        <div class="card" style="padding:20px 32px;display:flex;align-items:center;gap:16px;max-width:800px;margin:0 auto;">
+            <span style="font-size:24px;">💡</span>
+            <p class="body-text" style="font-size:18px;">Ask Kimchi to deploy for you — <span class="mono accent-lime">"deploy this to Vercel"</span> — it can run the CLI for you.</p>
+        </div>
+    </div>
+</div>
+</section>
+
+<!-- ============================================================
+     Slide 13 — Resources + Q&A + Feedback
+     ============================================================ -->
+<section class="slide" id="slide-12">
+<div class="cover-grid-pattern"></div>
+<div class="cover-bg"></div>
+<div class="slide-inner" style="justify-content:center;align-items:center;text-align:center;">
+    <div class="bp-reveal-scale" style="margin-bottom:32px;">
+        <div class="kimchi-logo" style="justify-content:center;">
+            <img src="data:image/png;base64,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" alt="Kimchi logo">
+            <span class="kimchi-logo-text">kimchi.dev</span>
+        </div>
+    </div>
+    <h2 class="slide-title bp-reveal-up" style="animation-delay:0.15s;">Questions?</h2>
+    <p class="slide-subtitle bp-reveal-up" style="margin-top:16px;animation-delay:0.25s;text-align:center;">Keep building. Here's everything you need.</p>
+    <div class="grid-3 bp-reveal-up" style="margin-top:56px;animation-delay:0.35s;max-width:1100px;gap:24px;">
+        <div class="card card-accent-red" style="padding:28px;text-align:center;">
+            <div style="font-size:32px;margin-bottom:12px;">📖</div>
+            <h3 class="h3 accent-red" style="font-size:20px;">Docs</h3>
+            <p class="mono" style="color:var(--muted-gray);font-size:16px;margin-top:8px;">docs.kimchi.dev</p>
+        </div>
+        <div class="card card-accent-lime" style="padding:28px;text-align:center;">
+            <div style="font-size:32px;margin-bottom:12px;">💬</div>
+            <h3 class="h3 accent-lime" style="font-size:20px;">Discord</h3>
+            <p class="mono" style="color:var(--muted-gray);font-size:16px;margin-top:8px;">discord.gg/getkimchi</p>
+        </div>
+        <div class="card card-accent-amber" style="padding:28px;text-align:center;">
+            <div style="font-size:32px;margin-bottom:12px;">⭐</div>
+            <h3 class="h3 accent-amber" style="font-size:20px;">GitHub</h3>
+            <p class="mono" style="color:var(--muted-gray);font-size:16px;margin-top:8px;">github.com/getkimchi/kimchi</p>
+        </div>
+    </div>
+    <div class="bp-reveal-up" style="margin-top:48px;animation-delay:0.5s;display:flex;align-items:center;gap:40px;">
+        <div style="text-align:right;">
+            <h3 class="h3 accent-lime" style="font-size:22px;">Tell us how we did</h3>
+            <p class="caption" style="margin-top:8px;">2 minutes. Be brutally honest.</p>
+        </div>
+        <div class="qr-container" style="padding:12px;">
+            <img src="data:image/png;base64,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" alt="QR code for feedback form" style="width:120px;height:120px;">
+        </div>
+    </div>
+    <div class="bp-reveal-fade" style="margin-top:48px;animation-delay:0.65s;">
+        <p class="mono" style="color:var(--dim-gray);font-size:16px;">Kunal Das · Developer Advocate (APAC) · Kimchi.dev</p>
+        <p class="mono" style="color:var(--dim-gray);font-size:14px;margin-top:8px;">AI Agents Workshop · Bengaluru Tech Week 2026 · September 6, 2026</p>
+    </div>
+</div>
+</section>
+
+</div><!-- /deck-stage -->
+</div><!-- /deck-viewport -->
+
+<script>
+(function() {
+    var stage = document.getElementById('stage');
+    var slides = Array.from(stage.querySelectorAll('.slide'));
+    var total = slides.length;
+    var current = 0;
+
+    function scaleStage() {
+        var s = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+        stage.style.transform = 'scale(' + s + ')';
+    }
+    scaleStage();
+    window.addEventListener('resize', scaleStage);
+
+    function goTo(i) {
+        if (i < 0) i = 0;
+        if (i >= total) i = total - 1;
+        if (i === current) return;
+        slides[current].classList.remove('active');
+        current = i;
+        slides[current].classList.add('active');
+        updateIndicator();
+        // Replay entrance animations
+        var reveals = slides[current].querySelectorAll('.bp-reveal-fade, .bp-reveal-up, .bp-reveal-left, .bp-reveal-right, .bp-reveal-scale');
+        reveals.forEach(function(el) {
+            el.style.animation = 'none';
+            el.offsetHeight; // reflow
+            el.style.animation = '';
+        });
+    }
+
+    function next() { goTo(current + 1); }
+    function prev() { goTo(current - 1); }
+
+    document.addEventListener('keydown', function(e) {
+        switch(e.key) {
+            case 'ArrowRight': case ' ': case 'PageDown': e.preventDefault(); next(); break;
+            case 'ArrowLeft': case 'PageUp': e.preventDefault(); prev(); break;
+            case 'Home': e.preventDefault(); goTo(0); break;
+            case 'End': e.preventDefault(); goTo(total - 1); break;
+        }
+    });
+
+    // Touch navigation
+    document.addEventListener('click', function(e) {
+        var x = e.clientX / window.innerWidth;
+        if (x < 0.33) prev();
+        else if (x > 0.67) next();
+    });
+
+    // Page indicator dots
+    var indicator = document.getElementById('pageIndicator');
+    for (var i = 0; i < total; i++) {
+        var dot = document.createElement('div');
+        dot.className = 'page-dot';
+        if (i === 0) dot.classList.add('active');
+        (function(idx) {
+            dot.addEventListener('click', function(e) { e.stopPropagation(); goTo(idx); });
+        })(i);
+        indicator.appendChild(dot);
+    }
+
+    function updateIndicator() {
+        var dots = indicator.querySelectorAll('.page-dot');
+        dots.forEach(function(dot, i) {
+            dot.classList.remove('active', 'completed');
+            if (i === current) dot.classList.add('active');
+            else if (i < current) dot.classList.add('completed');
+        });
+    }
+
+    // Custom cursor
+    var cursor = document.getElementById('cursor');
+    var cursorDot = document.getElementById('cursorDot');
+    document.addEventListener('mousemove', function(e) {
+        cursor.style.left = e.clientX + 'px';
+        cursor.style.top = e.clientY + 'px';
+        cursorDot.style.left = e.clientX + 'px';
+        cursorDot.style.top = e.clientY + 'px';
+    });
+    document.addEventListener('mouseleave', function() {
+        cursor.style.opacity = '0';
+        cursorDot.style.opacity = '0';
+    });
+    document.addEventListener('mouseenter', function() {
+        cursor.style.opacity = '1';
+        cursorDot.style.opacity = '1';
+    });
+    // Hover state on interactive elements
+    document.querySelectorAll('a, button, .page-dot, .qr-container, .terminal').forEach(function(el) {
+        el.addEventListener('mouseenter', function() { cursor.classList.add('hover'); });
+        el.addEventListener('mouseleave', function() { cursor.classList.remove('hover'); });
+    });
+})();
+</script>
+
+</body>
+</html>
